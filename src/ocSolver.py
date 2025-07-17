@@ -855,7 +855,7 @@ class OCSys:
 
     # This function is to convert a constrained optimal control system into an unconstrained optimal control then
     # using PDP
-    def convert2BarrierOC(self, gamma=1e-2):
+    def convert2BarrierOC(self, gamma=1e-2, beta=1):
 
         # in case of not differentiating the PMP
         if not hasattr(self, 'dLx_path'):
@@ -880,11 +880,11 @@ class OCSys:
         path_inequ_barrier = 0
         if self.n_path_inequ_cstr == 1:
             # path_inequ_barrier += -log(-self.path_inequ_cstr)
-            path_inequ_barrier += log(1 + exp(self.path_inequ_cstr))
+            path_inequ_barrier += gamma/beta * log(1 + exp(beta * self.path_inequ_cstr))
         else:
             for k in range(self.n_path_inequ_cstr):
                 # path_inequ_barrier += -log(-self.path_inequ_cstr[k])
-                path_inequ_barrier += log(1 + exp(self.path_inequ_cstr[k]))
+                path_inequ_barrier += gamma/beta * log(1 + exp(beta * self.path_inequ_cstr[k]))
 
         # second-order barrier for the equality path constraints
         path_equ_barrier = 0
@@ -903,11 +903,11 @@ class OCSys:
         final_inequ_barrier = 0
         if self.n_final_inequ_cstr == 1:
             # final_inequ_barrier += -log(-self.final_inequ_cstr)
-            final_inequ_barrier += log(1 + exp(self.final_inequ_cstr))
+            final_inequ_barrier += gamma/beta * log(1 + exp(beta * self.final_inequ_cstr))
         else:
             for k in range(self.n_final_inequ_cstr):
                 # final_inequ_barrier += -log(-self.final_inequ_cstr[k])
-                final_inequ_barrier += log(1 + exp(self.final_inequ_cstr[k]))
+                final_inequ_barrier += gamma/beta * log(1 + exp(beta * self.final_inequ_cstr[k]))
 
         # second-order barrier for the equality final constraints
         final_equ_barrier = 0

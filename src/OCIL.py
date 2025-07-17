@@ -15,7 +15,7 @@ import ocSolver
 
 
 class ImitationLearning:
-    def __init__(self, project="", mode="", dynsys=None, noise=None, gamma=1e-2, dir="", demoFile="", saveFlag=False):
+    def __init__(self, project="", mode="", dynsys=None, noise=None, gamma=1e-2, beta=1, dir="", demoFile="", saveFlag=False):
 
         if not (mode == "Objective" or mode == "Dynamic" or mode == "All"):
             print("Mode not defined!")
@@ -50,7 +50,7 @@ class ImitationLearning:
 
         print(data['true_parameter'].flatten())
         print(self.true_theta)
-        self.true_theta = np.hstack((self.true_theta, [10]))
+        # self.true_theta = np.hstack((self.true_theta, [10]))
 
         # ------------------------------ initialize Classes ------------------------------
         self.sysoc = ocSolver.OCSys()
@@ -65,7 +65,9 @@ class ImitationLearning:
         self.sysoc.diffCPMP()
 
         self.clqr = ocSolver.EQCLQR()
-        self.sysoc.convert2BarrierOC(gamma=gamma)
+        self.gamma = gamma
+        self.beta = beta
+        self.sysoc.convert2BarrierOC(gamma=gamma, beta=beta)
 
         # ------------------------------ initilize tunable parameter ------------------------------
         self.sigma = 0.9
@@ -182,10 +184,12 @@ class ImitationLearning:
                 C_value = -current_traj[2]-4
 
                 K = 1
+                gamma = 1e1
+                beta = 1
                 
                 loss = demo_traj - xi
-                # print('------------', np.log(1+np.exp(C_value)))
-                loss = demo_traj - xi + epsilon * np.log(1+np.exp(C))
+                print('------------', C_value)
+                # loss = demo_traj - xi + self.gamma/self.beta * log(1 + exp(beta * C))
                 # barrier = 0
                 # if C_value <= 0:
                 #     barrier = 0
@@ -328,8 +332,8 @@ class ImitationLearning:
         iter = [*range(len(state_traj))]
         fig, axs = plt.subplots(len(state_traj[0]),1)
         for idx in range(len(state_traj[0])):
-            axs[idx].plot(iter, state_traj[:,idx])
-            axs[idx].plot(iter, self.demo_state_traj[:,idx])
+            axs[idx].plot(iter, state_traj[:,idx], 'b')
+            axs[idx].plot(iter, self.demo_state_traj[:,idx], 'r')
             axs[idx].set_ylabel("x"+str(idx+1))
         axs[-1].set_xlabel("Iteration")
         axs[0].set_title("State Trajectory")
@@ -337,17 +341,17 @@ class ImitationLearning:
         iter = [*range(len(control_traj))]
         if len(control_traj[0]) == 1:
             fig, axs = plt.subplots()
-            axs.plot(iter, control_traj)
-            axs.plot(iter, self.demo_control_traj)
+            axs.plot(iter, control_traj, 'b')
+            axs.plot(iter, self.demo_control_traj, 'r')
             axs.set_ylabel("u")
             axs.set_xlabel("Iteration")
             axs.set_title("Control Trajectory")
         else:
             fig, axs = plt.subplots(len(control_traj[0]),1)
             for idx in range(len(control_traj[0])):
-                axs[idx].plot(iter, control_traj[:,idx])
-                axs[idx].plot(iter, self.demo_control_traj[:,idx])
-                axs[idx].set_ylabel("x"+str(idx+1))
+                axs[idx].plot(iter, control_traj[:,idx], 'b')
+                axs[idx].plot(iter, self.demo_control_traj[:,idx], 'r')
+                axs[idx].set_ylabel("u"+str(idx+1))
             axs[-1].set_xlabel("Iteration")
             axs[0].set_title("Control Trajectory")
         plt.show()
