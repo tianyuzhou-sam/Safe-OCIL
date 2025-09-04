@@ -524,8 +524,7 @@ class CartPole:
 
         self.path_cost = self.wx * (self.x - X_goal[0]) ** 2 + self.wq * (self.q - X_goal[1]) ** 2 + self.wdx * (
                 self.dx - X_goal[2]) ** 2 + self.wdq * (self.dq - X_goal[3]) ** 2 + wu * (self.U * self.U)
-        self.path_cost = self.path_cost + exp(1*(self.U-10))
-        self.path_cost = self.path_cost + exp(-1*(self.U+10))
+
         self.final_cost = self.wx * (self.x - X_goal[0]) ** 2 + self.wq * (self.q - X_goal[1]) ** 2 + self.wdx * (
                 self.dx - X_goal[2]) ** 2 + self.wdq * (self.dq - X_goal[3]) ** 2  # final cost
 
@@ -602,6 +601,24 @@ class CartPole:
         self.path_cost = (self.X - goal_X).T @ diag(state_weights) @ (self.X - goal_X) + wu * dot(self.U, self.U)
         self.final_cost = (self.X - goal_X).T @ diag(state_weights) @ (self.X - goal_X)
 
+    # def initConstraints(self, max_u=None):
+    #     # set path constraint h_final(x)
+    #     constraint_auxvar = []
+    #     if max_u is None:
+    #         max_u = SX.sym('max_u')
+    #         constraint_auxvar += [max_u]
+    #     # if max_x is None:
+    #     #     max_x = SX.sym('max_x')
+    #     #     constraint_auxvar += [max_x]
+    #     self.constraint_auxvar = vcat(constraint_auxvar)
+
+    #     path_inequ_Uub = self.U - max_u
+    #     path_inequ_Ulb = -self.U - max_u
+    #     # path_inequ_Xub = self.X[0] - max_x
+    #     # path_inequ_Xlb = -self.X[0] - max_x
+        
+    #     self.path_inequ = vcat([path_inequ_Uub, path_inequ_Ulb])
+
     def initConstraints(self, max_u=None, max_x=None):
         # set path constraint h_final(x)
         constraint_auxvar = []
@@ -619,15 +636,50 @@ class CartPole:
         path_inequ_Xlb = -self.X[0] - max_x
         self.path_inequ = vcat([path_inequ_Uub, path_inequ_Ulb, path_inequ_Xub, path_inequ_Xlb])
 
-    def initConstraints2(self, max_x, max_dx):
-        path_inequ_1 = self.X[0] - max_x
-        path_inequ_2 = -self.X[0] - max_x
-        path_inequ_3 = self.X[2] - max_dx
-        path_inequ_4 = -self.X[2] - max_dx
+    # def initConstraints(self, max_u=None):
+    #     # set path constraint h_final(x)
+    #     constraint_auxvar = []
+    #     if max_u is None:
+    #         max_u = SX.sym('max_u')
+    #         constraint_auxvar += [max_u]
+    #     # if max_x is None:
+    #     #     max_x = SX.sym('max_x')
+    #     #     constraint_auxvar += [max_x]
+    #     self.constraint_auxvar = vcat(constraint_auxvar)
 
-        self.constraint_auxvar = []
+    #     path_inequ_Uub = self.U - max_u
+    #     path_inequ_Ulb = -self.U - max_u
+    #     # path_inequ_Xub = self.X[0] - max_x
+    #     # path_inequ_Xlb = -self.X[0] - max_x
 
-        self.path_inequ = vcat([path_inequ_1, path_inequ_2, path_inequ_3, path_inequ_4])
+    #     taskC_1 = -self.X[2] - 4
+    #     taskC_2 = self.X[2] - 4
+
+    #     self.path_inequ = vcat([path_inequ_Uub, path_inequ_Ulb, taskC_1, taskC_2])
+
+    def initConstraints2(self, max_u=None):
+        constraint_auxvar = []
+        if max_u is None:
+            max_u = SX.sym('max_u')
+            constraint_auxvar += [max_u]
+
+        self.constraint_auxvar = vcat(constraint_auxvar)
+
+        path_inequ_Uub = self.U - max_u
+        path_inequ_Ulb = -self.U - max_u
+
+        self.path_inequ = vcat([path_inequ_Uub, path_inequ_Ulb])
+
+    def initConstraints3(self, final_x):
+        final_eq = self.X[0] - final_x
+
+        self.final_equ = vcat([final_eq])
+
+    def taskConstraint(self, max_v):
+        # taskC_1 = -self.X[2] - max_v
+        # taskC_2 = self.X[2] - max_v
+        # self.task_const = vcat([taskC_1, taskC_2])
+        self.task_const = None
 
     def play_animation(self, pole_len, dt, state_traj, state_traj_ref=None, save_option=0, title='Cart-pole system'):
 

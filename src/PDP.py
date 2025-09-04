@@ -276,7 +276,7 @@ class OCSys:
         J = J + self.final_cost_fn(Xk, auxvar_value)
 
         # Create an NLP solver and solve it
-        opts = {'ipopt.print_level': print_level, 'ipopt.sb': 'yes', 'print_time': print_level}
+        opts = {'ipopt.print_level': print_level, 'ipopt.sb': 'yes', 'print_time': print_level, 'show_eval_warnings': False}
         prob = {'f': J, 'x': vertcat(*w), 'g': vertcat(*g)}
         solver = nlpsol('solver', 'ipopt', prob, opts)
         # Solve the NLP
@@ -674,7 +674,18 @@ class LQR:
             Q_t = Hxx[t] - numpy.matmul(HxuinvHuu, numpy.transpose(Hxu[t]))
             N_t = Hxe[t] - numpy.matmul(HxuinvHuu, Hue[t])
 
-            temp_mat = numpy.matmul(numpy.transpose(A_t), numpy.linalg.inv(I + numpy.matmul(P_next, R_t)))
+            # temp_mat = numpy.matmul(numpy.transpose(A_t), numpy.linalg.inv(I + numpy.matmul(P_next, R_t)))
+            # P_curr = Q_t + numpy.matmul(temp_mat, numpy.matmul(P_next, A_t))
+            # W_curr = N_t + numpy.matmul(temp_mat, W_next + numpy.matmul(P_next, M_t))
+
+            M = I + numpy.matmul(P_next, R_t)
+
+            try:
+                M_inv = numpy.linalg.inv(M)
+            except numpy.linalg.LinAlgError:
+                return None
+
+            temp_mat = numpy.matmul(numpy.transpose(A_t), M_inv)
             P_curr = Q_t + numpy.matmul(temp_mat, numpy.matmul(P_next, A_t))
             W_curr = N_t + numpy.matmul(temp_mat, W_next + numpy.matmul(P_next, M_t))
 
@@ -710,8 +721,18 @@ class LQR:
             R_t = numpy.matmul(GinvHuu, numpy.transpose(G[t]))
 
             x_t = state_traj_opt[t]
+            # u_t = -numpy.matmul(invHuu, numpy.matmul(numpy.transpose(Hxu[t]), x_t) + Hue[t]) \
+            #       - numpy.linalg.multi_dot([invHuu, numpy.transpose(G[t]), numpy.linalg.inv(I + numpy.dot(P_next, R_t)),
+            #                                 (numpy.matmul(numpy.matmul(P_next, A_t), x_t) + numpy.matmul(P_next,
+                                                                                                        #  M_t) + W_next)])
+            M = I + numpy.dot(P_next, R_t)
+            try:
+                M_inv = numpy.linalg.inv(M)
+            except numpy.linalg.LinAlgError:
+                return None
+
             u_t = -numpy.matmul(invHuu, numpy.matmul(numpy.transpose(Hxu[t]), x_t) + Hue[t]) \
-                  - numpy.linalg.multi_dot([invHuu, numpy.transpose(G[t]), numpy.linalg.inv(I + numpy.dot(P_next, R_t)),
+                  - numpy.linalg.multi_dot([invHuu, numpy.transpose(G[t]), M_inv,
                                             (numpy.matmul(numpy.matmul(P_next, A_t), x_t) + numpy.matmul(P_next,
                                                                                                          M_t) + W_next)])
 
@@ -728,6 +749,136 @@ class LQR:
                    'costate_traj_opt': costate_traj_opt,
                    'time': time}
         return opt_sol
+
+class HessianSolver:
+    def setDyn(self, dfx, dfu, dfe, dHx, dHu, ddHxx, ddHxu, ddHxe, ddHux, ddHuu, ddHue, dhx, ddhxx, ddhxe, num_state, num_control, num_auxvar, state, control, auxvar, costate):
+        self.dfx = dfx
+        self.dfu = dfu
+        self.dfe = dfe
+        self.dHx = dHx
+        self.dHu = dHu
+        self.ddHxx = ddHxx
+        self.ddHxu = ddHxu
+        self.ddHxe = ddHxe
+        self.ddHux = ddHux
+        self.ddHuu = ddHuu
+        self.ddHue = ddHue
+        self.dhx = dhx
+        self.ddhxx = ddhxx
+        self.ddhxe = ddhxe
+        self.state = state
+        self.control = control
+        self.auxvar = auxvar
+        self.costate1 = costate
+
+
+        self.dxde = SX.sym('dxde', num_state, num_auxvar)
+        self.dude = SX.sym('dude', num_control, num_auxvar)
+
+
+        self.dyn = np.matmul(dfx, self.dxde) + np.matmul(dfu, self.dude) + dfe
+        self.dyn_fn = casadi.Function('dyn', [self.dxde, self.dude, self.state, self.control, self.auxvar], [self.dyn])
+
+    def setPathCost(self):
+        dxdedude = vertcat(self.dxde, self.dude)
+        Hxu = vertcat(horzcat(self.ddHxx, self.ddHxu), horzcat(self.ddHux, self.ddHuu))
+        Hxue = vertcat(self.ddHxe, self.ddHue)
+        self.path_cost = trace(1/2 * dxdedude.T @ Hxu @ dxdedude + Hxue.T @ dxdedude)
+        self.path_cost_fn = casadi.Function('path_cost', [self.dxde, self.dude, self.state, self.control, self.auxvar, self.costate1], [self.path_cost])
+
+    def setFinalCost(self):
+        self.final_cost = trace(1/2 * self.dxde.T @ self.ddhxx @ self.dxde + self.ddhxe.T @ self.dxde)
+        self.final_cost_fn = casadi.Function('final_cost', [self.dxde, self.state, self.control, self.auxvar], [self.final_cost])
+
+    def diffPMP(self):
+        # Define the Hamiltonian function
+        self.costate = casadi.SX.sym('lambda', (self.dxde.shape[0], self.dyn.shape[1]))
+        self.path_Hamil = self.path_cost + dot(self.dyn, self.costate)  # path Hamiltonian
+        self.final_Hamil = self.final_cost  # final Hamiltonian
+
+        # Differentiating dynamics; notations here are consistent with the PDP paper
+        self.dfx = jacobian(self.dyn, self.state)
+        self.dfx_fn = casadi.Function('dfx', [self.dxde, self.dude, self.state, self.control, self.auxvar], [self.dfx])
+        self.dfu = jacobian(self.dyn, self.control)
+        self.dfu_fn = casadi.Function('dfu', [self.dxde, self.dude, self.state, self.control, self.auxvar], [self.dfu])
+        self.dfe = jacobian(self.dyn, self.auxvar)
+        self.dfe_fn = casadi.Function('dfe', [self.dxde, self.dude, self.state, self.control, self.auxvar], [self.dfe])
+
+        # First-order derivative of path Hamiltonian
+        self.dHx = jacobian(self.path_Hamil, self.state).T
+        self.dHx_fn = casadi.Function('dHx', [self.dxde, self.dude, self.state, self.control, self.costate, self.costate1, self.auxvar], [self.dHx])
+        self.dHu = jacobian(self.path_Hamil, self.control).T
+        self.dHu_fn = casadi.Function('dHu', [self.dxde, self.dude, self.state, self.control, self.costate, self.costate1, self.auxvar], [self.dHu])
+
+        # Second-order derivative of path Hamiltonian
+        self.ddHxx = jacobian(self.dHx, self.state)
+        self.ddHxx_fn = casadi.Function('ddHxx', [self.dxde, self.dude, self.state, self.control, self.costate, self.costate1, self.auxvar], [self.ddHxx])
+        self.ddHxu = jacobian(self.dHx, self.control)
+        self.ddHxu_fn = casadi.Function('ddHxu', [self.dxde, self.dude, self.state, self.control, self.costate, self.costate1, self.auxvar], [self.ddHxu])
+        self.ddHxe = jacobian(self.dHx, self.auxvar)
+        self.ddHxe_fn = casadi.Function('ddHxe', [self.dxde, self.dude, self.state, self.control, self.costate, self.costate1, self.auxvar], [self.ddHxe])
+        self.ddHux = jacobian(self.dHu, self.state)
+        self.ddHux_fn = casadi.Function('ddHux', [self.dxde, self.dude, self.state, self.control, self.costate, self.costate1, self.auxvar], [self.ddHux])
+        self.ddHuu = jacobian(self.dHu, self.control)
+        self.ddHuu_fn = casadi.Function('ddHuu', [self.dxde, self.dude, self.state, self.control, self.costate, self.costate1, self.auxvar], [self.ddHuu])
+        self.ddHue = jacobian(self.dHu, self.auxvar)
+        self.ddHue_fn = casadi.Function('ddHue', [self.dxde, self.dude, self.state, self.control, self.costate, self.costate1, self.auxvar], [self.ddHue])
+
+        # First-order derivative of final Hamiltonian
+        self.dhx = jacobian(self.final_Hamil, self.state).T
+        self.dhx_fn = casadi.Function('dhx', [self.dxde, self.dude, self.state, self.auxvar], [self.dhx])
+
+        # second order differential of path Hamiltonian
+        self.ddhxx = jacobian(self.dhx, self.state)
+        self.ddhxx_fn = casadi.Function('ddhxx', [self.dxde, self.dude, self.state, self.auxvar], [self.ddhxx])
+        self.ddhxe = jacobian(self.dhx, self.auxvar)
+        self.ddhxe_fn = casadi.Function('ddhxe', [self.dxde, self.dude, self.state, self.auxvar], [self.ddhxe])
+
+    def getAuxSys(self, state_traj_opt, control_traj_opt, costate_traj_opt, auxvar_value=1):
+        statement = [hasattr(self, 'dfx_fn'), hasattr(self, 'dfu_fn'), hasattr(self, 'dfe_fn'),
+                     hasattr(self, 'ddHxx_fn'), \
+                     hasattr(self, 'ddHxu_fn'), hasattr(self, 'ddHxe_fn'), hasattr(self, 'ddHux_fn'),
+                     hasattr(self, 'ddHuu_fn'), \
+                     hasattr(self, 'ddHue_fn'), hasattr(self, 'ddhxx_fn'), hasattr(self, 'ddhxe_fn'), ]
+        if not all(statement):
+            self.diffPMP()
+
+        # Initialize the coefficient matrices of the auxiliary control system: note that all the notations used here are
+        # consistent with the notations defined in the PDP paper.
+        dynF, dynG, dynE = [], [], []
+        matHxx, matHxu, matHxe, matHux, matHuu, matHue, mathxx, mathxe = [], [], [], [], [], [], [], []
+
+        # Solve the above coefficient matrices
+        for t in range(numpy.size(control_traj_opt, 0)):
+            curr_x = state_traj_opt[t, :]
+            curr_u = control_traj_opt[t, :]
+            next_lambda = costate_traj_opt[t, :]
+            dynF += [self.dfx_fn(curr_x, curr_u, auxvar_value).full()]
+            dynG += [self.dfu_fn(curr_x, curr_u, auxvar_value).full()]
+            dynE += [self.dfe_fn(curr_x, curr_u, auxvar_value).full()]
+            matHxx += [self.ddHxx_fn(curr_x, curr_u, next_lambda, auxvar_value).full()]
+            matHxu += [self.ddHxu_fn(curr_x, curr_u, next_lambda, auxvar_value).full()]
+            matHxe += [self.ddHxe_fn(curr_x, curr_u, next_lambda, auxvar_value).full()]
+            matHux += [self.ddHux_fn(curr_x, curr_u, next_lambda, auxvar_value).full()]
+            matHuu += [self.ddHuu_fn(curr_x, curr_u, next_lambda, auxvar_value).full()]
+            matHue += [self.ddHue_fn(curr_x, curr_u, next_lambda, auxvar_value).full()]
+        mathxx = [self.ddhxx_fn(state_traj_opt[-1, :], auxvar_value).full()]
+        mathxe = [self.ddhxe_fn(state_traj_opt[-1, :], auxvar_value).full()]
+
+        auxSys = {"dynF": dynF,
+                  "dynG": dynG,
+                  "dynE": dynE,
+                  "Hxx": matHxx,
+                  "Hxu": matHxu,
+                  "Hxe": matHxe,
+                  "Hux": matHux,
+                  "Huu": matHuu,
+                  "Hue": matHue,
+                  "hxx": mathxx,
+                  "hxe": mathxe}
+        return auxSys
+
+    
 
 
 '''

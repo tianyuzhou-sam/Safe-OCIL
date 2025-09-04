@@ -855,7 +855,9 @@ class OCSys:
 
     # This function is to convert a constrained optimal control system into an unconstrained optimal control then
     # using PDP
-    def convert2BarrierOC(self, gamma=1e-2, beta=1):
+    def convert2BarrierOC(self, alpha=1e-2, beta=1e-2):
+        barrier_type = 'softplus'
+        # barrier_type = 'log'
 
         # in case of not differentiating the PMP
         if not hasattr(self, 'dLx_path'):
@@ -879,47 +881,59 @@ class OCSys:
         # natural log barrier for the inequality path constraints
         path_inequ_barrier = 0
         if self.n_path_inequ_cstr == 1:
-            # path_inequ_barrier += -log(-self.path_inequ_cstr)
-            path_inequ_barrier += gamma/beta * log(1 + exp(beta * self.path_inequ_cstr))
+            if barrier_type == 'log':
+                path_inequ_barrier += -alpha*log(-self.path_inequ_cstr)
+            elif barrier_type == 'softplus':
+                # beta = 1/self.path_inequ_cstr*log(-gamma**2/(self.path_inequ_cstr-gamma**2))
+                path_inequ_barrier += beta/alpha * log(1 + exp(self.path_inequ_cstr/beta))
         else:
             for k in range(self.n_path_inequ_cstr):
-                # path_inequ_barrier += -log(-self.path_inequ_cstr[k])
-                path_inequ_barrier += gamma/beta * log(1 + exp(beta * self.path_inequ_cstr[k]))
+                if barrier_type == 'log':
+                    path_inequ_barrier += -alpha*log(-self.path_inequ_cstr[k])
+                elif barrier_type == 'softplus':
+                    # beta = 1/self.path_inequ_cstr[k]*log(-gamma**2/(self.path_inequ_cstr[k]-gamma**2))
+                    path_inequ_barrier += beta/alpha * log(1 + exp(self.path_inequ_cstr[k]/beta))
 
         # second-order barrier for the equality path constraints
         path_equ_barrier = 0
         if self.n_path_equ_cstr == 1:
-            path_equ_barrier += (self.path_inequ_cstr) ** 2
+            path_equ_barrier += 0.5 / alpha * (self.path_inequ_cstr) ** 2
         else:
             for k in range(self.n_path_equ_cstr):
-                path_equ_barrier += (self.path_inequ_cstr[k]) ** 2
+                path_equ_barrier += 0.5 / alpha * (self.path_inequ_cstr[k]) ** 2
 
         # overall cost plus the barrier in path
-        # path_costbarrier = self.path_cost + gamma * path_inequ_barrier + 0.5 / gamma * path_equ_barrier
-        path_costbarrier = self.path_cost + gamma * path_inequ_barrier + 0.5 * gamma * path_equ_barrier
+        path_costbarrier = self.path_cost + path_inequ_barrier + path_equ_barrier
+        # path_costbarrier = self.path_cost + path_inequ_barrier + 0.5 * gamma * path_equ_barrier
         self.barrier_oc.setPathCost(path_costbarrier)
 
         # natural log barrier for the inequality final constraints
         final_inequ_barrier = 0
         if self.n_final_inequ_cstr == 1:
-            # final_inequ_barrier += -log(-self.final_inequ_cstr)
-            final_inequ_barrier += gamma/beta * log(1 + exp(beta * self.final_inequ_cstr))
+            if barrier_type == 'log':
+                final_inequ_barrier += -alpha*log(-self.final_inequ_cstr)
+            elif barrier_type == 'softplus':
+                # beta = 1/self.final_inequ_cstr*log(-gamma**2/(self.final_inequ_cstr-gamma**2))
+                final_inequ_barrier += beta/alpha * log(1 + exp(self.final_inequ_cstr/beta))
         else:
             for k in range(self.n_final_inequ_cstr):
-                # final_inequ_barrier += -log(-self.final_inequ_cstr[k])
-                final_inequ_barrier += gamma/beta * log(1 + exp(beta * self.final_inequ_cstr[k]))
+                if barrier_type == 'log':
+                    final_inequ_barrier += -alpha*log(-self.final_inequ_cstr[k])
+                elif barrier_type == 'softplus':
+                    # beta = 1/self.final_inequ_cstr[k]*log(-gamma**2/(self.final_inequ_cstr[k]-gamma**2))
+                    final_inequ_barrier += 2*beta/alpha * log(1 + exp(self.final_inequ_cstr[k]/beta))
 
         # second-order barrier for the equality final constraints
         final_equ_barrier = 0
         if self.n_final_equ_cstr == 1:
-            final_equ_barrier += (self.final_equ_cstr) ** 2
+            final_equ_barrier += 0.5 / alpha * (self.final_equ_cstr) ** 2
         else:
             for k in range(self.n_final_equ_cstr):
-                final_equ_barrier += (self.final_equ_cstr[k]) ** 2
+                final_equ_barrier += 0.5 / alpha * (self.final_equ_cstr[k]) ** 2
 
         # overall cost plus the barrier at final
-        # final_costbarrier = self.final_cost + gamma * final_inequ_barrier + 0.5 / gamma * final_equ_barrier
-        final_costbarrier = self.final_cost + gamma * final_inequ_barrier + 0.5 * gamma * final_equ_barrier
+        final_costbarrier = self.final_cost + final_inequ_barrier + final_equ_barrier
+        # final_costbarrier = self.final_cost + final_inequ_barrier + 0.5 * gamma * final_equ_barrier
         self.barrier_oc.setFinalCost(final_costbarrier)
 
         # differentiating PDP for the barrier optimal control
@@ -973,183 +987,6 @@ class OCSys:
 
         return aux_sol
     
-    def safeEKF_ocSolver(self, ini_state, horizon, auxvar_value, theta_ref, P_inv, ref=None, print_level=0):
-        """
-        Solves a constrained optimization problem to find new theta and trajectory that:
-        1. Minimizes (theta-theta_ref)^T * P_inv * (theta-theta_ref)
-        2. Subject to dynamics constraints
-        3. Subject to gradient of total cost = 0 (optimality condition)
-        4. Subject to Hessian of total cost being positive semidefinite (SOSC)
-        5. Subject to x[2] > -4 (state constraint)
-        6. Uses reference trajectory for warm start if provided
-        """
-        if type(ini_state) == numpy.ndarray:
-            ini_state = ini_state.flatten().tolist()
-
-        # Start with an empty NLP
-        w = []
-        w0 = []
-        lbw = []
-        ubw = []
-        J = 0
-        g = []
-        lbg = []
-        ubg = []
-
-        # Add theta as a decision variable
-        theta = MX.sym('theta', auxvar_value.shape[0])
-        w += [theta]
-        w0 += auxvar_value.tolist()
-        lbw += [-inf] * auxvar_value.shape[0]
-        ubw += [inf] * auxvar_value.shape[0]
-
-        # Add parameter difference cost term
-        theta_diff = theta - theta_ref
-        J = mtimes([theta_diff.T, P_inv, theta_diff])
-
-        # "Lift" initial conditions
-        Xk = MX.sym('X0', self.n_state)
-        w += [Xk]
-        lbw += ini_state
-        ubw += ini_state
-        if ref is not None:
-            w0 += ref['state_traj_opt'][0,:].tolist()
-        else:
-            w0 += [0] * self.n_state
-
-        # Add state constraint for initial state
-        g += [Xk[2] + 4]  # x[2] > -4
-        lbg += [0]  # x[2] + 4 >= 0
-        ubg += [inf]
-
-        # Create symbolic variables for all states and controls
-        X = [Xk]
-        U = []
-        
-        # Formulate the NLP
-        for k in range(horizon):
-            # Control variable
-            Uk = MX.sym('U_' + str(k), self.n_control)
-            U += [Uk]
-            w += [Uk]
-            lbw += self.control_lb
-            ubw += self.control_ub
-            if ref is not None:
-                w0 += ref['control_traj_opt'][k,:].tolist()
-            else:
-                w0 += [0] * self.n_control
-
-            # Dynamics constraint
-            Xnext = self.dyn_fn(Xk, Uk, theta)
-            g += [Xnext - Xk]
-            lbg += self.n_state * [0]
-            ubg += self.n_state * [0]
-
-            # State variable
-            Xk = MX.sym('X_' + str(k + 1), self.n_state)
-            X += [Xk]
-            w += [Xk]
-            lbw += self.state_lb
-            ubw += self.state_ub
-            if ref is not None:
-                w0 += ref['state_traj_opt'][k+1,:].tolist()
-            else:
-                w0 += [0] * self.n_state
-
-            # Add state constraint for each state
-            g += [Xk[2] + 4]  # x[2] > -4
-            lbg += [0]  # x[2] + 4 >= 0
-            ubg += [inf]
-
-        # Compute total cost
-        total_cost = 0
-        for k in range(horizon):
-            total_cost += self.path_cost_fn(X[k], U[k], theta)
-        total_cost += self.final_cost_fn(X[-1], theta)
-
-        # Create vector of all trajectory variables
-        xi = vertcat(*X, *U)
-
-        # Add gradient constraint
-        grad_J = gradient(total_cost, xi)
-        g += [grad_J]
-        lbg += [0] * grad_J.shape[0]
-        ubg += [0] * grad_J.shape[0]
-
-        # Add SOSC constraint
-        v = MX.sym("v", xi.shape[0])
-        w += [v]
-        w0 += [0.1] * v.shape[0]
-        lbw += [-1] * v.shape[0]
-        ubw += [1] * v.shape[0]
-
-        HL = hessian(total_cost, xi)[0]
-        sosc_check = mtimes([v.T, HL, v])
-        g += [sosc_check]
-        lbg += [0]
-        ubg += [inf]
-
-        # Create solver
-        opts = {
-            'ipopt.print_level': print_level,
-            'ipopt.sb': 'yes',
-            'print_time': print_level,
-            'ipopt.max_iter': 1000,
-            'ipopt.acceptable_tol': 1e-4,
-            'ipopt.acceptable_obj_change_tol': 1e-4,
-            'ipopt.mu_strategy': 'adaptive',
-            'ipopt.warm_start_init_point': 'yes'
-        }
-        
-        prob = {'f': J, 'x': vertcat(*w), 'g': vertcat(*g)}
-        solver = nlpsol('solver', 'ipopt', prob, opts)
-        
-        # try:
-        # Solve the NLP
-        sol = solver(x0=w0, lbx=lbw, ubx=ubw, lbg=lbg, ubg=ubg)
-        w_opt = sol['x'].full().flatten()
-        
-        # Extract solution
-        theta_opt = w_opt[:auxvar_value.shape[0]]
-        traj_opt = w_opt[auxvar_value.shape[0]:-v.shape[0]]
-        
-        # Reshape trajectory
-        sol_traj = numpy.concatenate((traj_opt, self.n_control * [0]))
-        sol_traj = numpy.reshape(sol_traj, (-1, self.n_state + self.n_control))
-        state_traj_opt = sol_traj[:, 0:self.n_state]
-        control_traj_opt = numpy.delete(sol_traj[:, self.n_state:], -1, 0)
-        time = numpy.array([k for k in range(horizon + 1)])
-
-        # Get costates
-        lam_g = sol['lam_g'].full().flatten()
-        n_dyn = self.n_state
-        n_grad = grad_J.shape[0]
-        
-        n_xi = xi.shape[0]  # Total number of trajectory variables
-        lam_grad = lam_g[horizon * n_dyn : horizon * n_dyn + n_xi]  # Extract multipliers for gradient constraint
-        
-        # Reshape costates to match trajectory dimensions
-        # First n_state elements are for states, rest are for controls
-        costate_traj_opt = lam_grad[:horizon * self.n_state].reshape(horizon, self.n_state)
-
-        return {
-            "auxvar_value": theta_opt,
-            "state_traj_opt": state_traj_opt,
-            "control_traj_opt": control_traj_opt,
-            "costate_traj_opt": costate_traj_opt,
-            "time": time,
-            "horizon": horizon,
-            "cost": sol['f'].full(),
-            "sosc_v": w_opt[-v.shape[0]:],
-            "lam_grad": lam_grad  # Include full gradient multipliers for debugging
-        }
-            
-        # except Exception as e:
-        #     print(f"Solver failed with error: {str(e)}")
-        #     print("Number of variables:", len(w))
-        #     print("Number of constraints:", len(g))
-        #     return None
-
 
 # This equality constraint LQR solver is mainly based on the paper
 # Efficient Computation of Feedback Control for Equality-Constrained LQR by Claire Tomlin.
