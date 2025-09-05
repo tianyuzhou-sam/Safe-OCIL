@@ -99,7 +99,7 @@ class ImitationLearning:
         self.ekf_time = []
         self.x_his = []
         self.u_his = []
-        self.theta_his = [self.theta]
+        self.theta_his = []
         self.cost_his = []
         self.barrier_cost_his = []  # Barrier costs from getCost
 
@@ -149,9 +149,11 @@ class ImitationLearning:
                 # --------------------------- Gradient generator, dXidtheta ---------------------------------------- 
                 gradient_start_time = time.time()
                 aux_sol = self.sysoc.auxSysBarrierOC(opt_sol=traj)
+                self.gradient_time += [time.time()-gradient_start_time]
+
+                ekf_start_time = time.time()
                 
                 if aux_sol is not None:
-                    self.gradient_time += [time.time()-gradient_start_time]
                     # take solution of the auxiliary control system
                     dxdtheta_traj = aux_sol['state_traj_opt']
                     dudtheta_traj = aux_sol['control_traj_opt']
@@ -225,7 +227,6 @@ class ImitationLearning:
                         print('Data = ', iter*self.demo_horizon+idx, 'Loss = ', self.Loss_his[-1])
                 
                 # --------------------------- EKF ----------------------------------------
-                ekf_start_time = time.time()
                 # updateTheta = EKF()
                 updateTheta.predict(self.theta, self.P_prev, self.Q_prev)
                 updateTheta.update(dp, self.R, lossNow)
@@ -318,8 +319,8 @@ class ImitationLearning:
     def saveAll(self):
         
         sio.savemat(self.dir+"results/results_" + time.strftime("%Y%m%d%H%M%S") + ".mat", {'Loss': self.Loss_his,
-                                                  'Data_time': self.data_time, 'Gradient_time': self.gradient_time,
-                                                    'EKF_time': self.ekf_time,
+                                                  'SOCIL_time': self.data_time, 'Gradient_time': self.gradient_time,
+                                                    'Estimator_time': self.ekf_time,
                                                     'true_theta': self.true_theta, 'theta': self.theta_his,
                                                     'demo_state': self.demo_state_traj, 'demo_control': self.demo_control_traj,
                                                     'demo_state_original': self.demo_state_traj_original,

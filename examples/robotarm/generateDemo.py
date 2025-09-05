@@ -7,7 +7,6 @@ sys.path.append(os.getcwd() + '/src')
 import SafeOCIL
 import JinEnv
 import generateTraj
-inf = 1e20
 
 # ------------------------------ Set up dynamic system ------------------------------
 saveFlag = False
@@ -20,8 +19,8 @@ max_u = 1
 max_q = pi
 dynsys.initConstraints(max_u=max_u, max_q=max_q)
 
-alpha = 5*4*1e-3
-beta = 5*1e-3
+alpha = 4*1e-2
+beta = 1e-2
 dt = 0.2
 horizon = 25
 init_state = [-pi / 2, 3 * pi / 4, 0, 0]

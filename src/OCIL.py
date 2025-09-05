@@ -84,7 +84,7 @@ class ImitationLearning:
         self.ekf_time = []
         self.x_his = []
         self.u_his = []
-        self.theta_his = [self.theta]
+        self.theta_his = []
 
     def initialize_theta(self, initial_theta):
         self.theta = initial_theta
@@ -210,8 +210,8 @@ class ImitationLearning:
 
     def saveAll(self):
         sio.savemat(self.dir+"results/results_" + time.strftime("%Y%m%d%H%M%S") + ".mat", {'Loss': self.Loss_his,
-                                                  'Data_time': self.data_time, 'Gradient_time': self.gradient_time,
-                                                    'EKF_time': self.ekf_time,
+                                                  'OCIL_time': self.data_time, 'Gradient_time': self.gradient_time,
+                                                    'Estimator_time': self.ekf_time,
                                                     'true_theta': self.true_theta, 'theta': self.theta_his,
                                                     'demo_state': self.demo_state_traj, 'demo_control': self.demo_control_traj,
                                                     'state': self.x_his, 'control': self.u_his})

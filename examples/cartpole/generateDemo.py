@@ -7,7 +7,6 @@ sys.path.append(os.getcwd() + '/src')
 import SafeOCIL
 import JinEnv
 import generateTraj
-inf = 1e20
 
 # ------------------------------ Set up dynamic system ------------------------------
 saveFlag = False
@@ -21,8 +20,8 @@ wdx = 0.1
 wdq = 0.1
 max_u = 5
 max_x = 0.8
-alpha = 4*1e-1
-beta = 1e-1
+alpha = 4*7.5*1e-2
+beta = 7.5*1e-2
 
 dynsys.initDyn(mc=mc, mp=mp, l=l)
 dynsys.initCost(wx=wx, wq=wq, wdx=wdx, wdq=wdq, wu = 0.1)
