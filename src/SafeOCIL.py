@@ -254,11 +254,11 @@ class ImitationLearning:
         # self.u_his += [control_traj]
 
         # --------------------------- save all Loss ---------------------------
-        # self.plotTraj(state_traj, control_traj)
+        self.plotTraj(state_traj, control_traj)
         if self.saveFlag:
             self.saveAll()
         
-        # self.plotLoss()
+        self.plotLoss()
 
     def evaluateLoss(self, state_traj, control_traj):
         Loss = 0

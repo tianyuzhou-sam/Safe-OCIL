@@ -8,7 +8,7 @@ fig = plt.figure(figsize=(10, 6))
 ax1 = plt.gca()
 
 # Create inset axes for zoom
-ax2 = plt.axes([0.2, 0.35, 0.3, 0.3])  # [left, bottom, width, height] - center-left
+ax2 = plt.axes([0.2, 0.3, 0.3, 0.3])  # [left, bottom, width, height] - center-left
 
 # Generate x values
 x = np.linspace(-5, 5, 1000)
@@ -25,11 +25,11 @@ for beta in betas:
     ax1.plot(x, softplus, label=f'Softplus β={beta}', linewidth=3)
 
 ax1.grid(True)
-ax1.legend(loc='upper left', fontsize=14)
-ax1.set_xlabel('x', fontsize=14)
-ax1.set_ylabel('y', fontsize=14)
-# ax1.set_title('ReLU vs Softplus Functions', fontsize=14)
-ax1.tick_params(labelsize=14)
+ax1.legend(loc='upper left', fontsize=16)
+ax1.set_xlabel('x', fontsize=16)
+ax1.set_ylabel('y', fontsize=16)
+# ax1.set_title('ReLU vs Softplus Functions', fontsize=16)
+ax1.tick_params(labelsize=16)
 
 # Create zoomed plot
 relu_zoom = np.maximum(0, x_zoom)

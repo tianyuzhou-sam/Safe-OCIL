@@ -18,7 +18,7 @@ dynsys.initConstraints()
 
 dir = 'examples/cartpole/data/'
 demoFile = 'cartpole_original_constrained.mat'
-noise = 0.2
+noise = 0.5
 alpha = 4*7.5*1e-2
 beta = 7.5*1e-2
 system = SafeOCIL.ImitationLearning(project, mode, dynsys, noise, alpha, beta, dir, demoFile, saveFlag)
@@ -36,14 +36,19 @@ system.set_iteration(1)
 
 # --------------------------- initilize EKF ----------------------------------------
 # no noise
+# P = np.eye(9) * 0.00000000001
+# Q = np.eye(9) * 0.
+# R = np.eye(5) * 0.00000001
+
+# # 0.2 noise
+# P = np.eye(9) * 0.0000000001
+# Q = np.eye(9) * 0.
+# R = np.eye(5) * 0.0000001
+
+# 0.5 noise
 P = np.eye(9) * 0.00000000001
 Q = np.eye(9) * 0.
-R = np.eye(5) * 0.00000001
-
-# 0.2 noise
-P = np.eye(9) * 0.000000001
-Q = np.eye(9) * 0.
-R = np.eye(5) * 0.00000001
+R = np.eye(5) * 0.0000001
 
 system.initialize_EKF(P, Q, R)
 

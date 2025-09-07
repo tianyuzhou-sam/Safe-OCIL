@@ -10,7 +10,7 @@ import JinEnv
 # ------------------------------ Set up dynamic system ------------------------------
 project = "CartPole"
 mode = "All"
-saveFlag = True
+saveFlag = False
 
 trails = 100
 dir = 'examples/cartpole/data/'

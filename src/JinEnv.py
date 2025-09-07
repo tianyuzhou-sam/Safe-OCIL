@@ -636,27 +636,6 @@ class CartPole:
         path_inequ_Xlb = -self.X[0] - max_x
         self.path_inequ = vcat([path_inequ_Uub, path_inequ_Ulb, path_inequ_Xub, path_inequ_Xlb])
 
-    # def initConstraints(self, max_u=None):
-    #     # set path constraint h_final(x)
-    #     constraint_auxvar = []
-    #     if max_u is None:
-    #         max_u = SX.sym('max_u')
-    #         constraint_auxvar += [max_u]
-    #     # if max_x is None:
-    #     #     max_x = SX.sym('max_x')
-    #     #     constraint_auxvar += [max_x]
-    #     self.constraint_auxvar = vcat(constraint_auxvar)
-
-    #     path_inequ_Uub = self.U - max_u
-    #     path_inequ_Ulb = -self.U - max_u
-    #     # path_inequ_Xub = self.X[0] - max_x
-    #     # path_inequ_Xlb = -self.X[0] - max_x
-
-    #     taskC_1 = -self.X[2] - 4
-    #     taskC_2 = self.X[2] - 4
-
-    #     self.path_inequ = vcat([path_inequ_Uub, path_inequ_Ulb, taskC_1, taskC_2])
-
     def initConstraints2(self, max_u=None):
         constraint_auxvar = []
         if max_u is None:
@@ -675,11 +654,6 @@ class CartPole:
 
         self.final_equ = vcat([final_eq])
 
-    def taskConstraint(self, max_v):
-        # taskC_1 = -self.X[2] - max_v
-        # taskC_2 = self.X[2] - max_v
-        # self.task_const = vcat([taskC_1, taskC_2])
-        self.task_const = None
 
     def play_animation(self, pole_len, dt, state_traj, state_traj_ref=None, save_option=0, title='Cart-pole system'):
 
