@@ -15,7 +15,7 @@ saveFlag = False
 trails = 100
 dir = 'examples/cartpole/data/'
 demoFile = 'cartpole_original_constrained.mat'
-noise = 0.5
+noise = 1.0
 alpha = 4*7.5*1e-2
 beta = 7.5*1e-2
 
@@ -39,13 +39,13 @@ for i in range(trails):
     initial_theta = true_theta + 2*sigma * (random_number[i] - 0.5)
     print('initial_theta = ', initial_theta)
     system.initialize_theta(initial_theta)
-    system.set_iteration(5)
+    system.set_iteration(2)
 
     # --------------------------- initilize EKF ----------------------------------------
     # # no noise
-    # P = np.eye(9) * 0.00000000001
-    # Q = np.eye(9) * 0.
-    # R = np.eye(5) * 0.00000001
+    P = np.eye(9) * 0.00000000001
+    Q = np.eye(9) * 0.
+    R = np.eye(5) * 0.00000001
     
     # # 0.2 noise
     # P = np.eye(9) * 0.0000000001
@@ -53,9 +53,14 @@ for i in range(trails):
     # R = np.eye(5) * 0.0000001
 
     # 0.5 noise
-    P = np.eye(9) * 0.00000000001
-    Q = np.eye(9) * 0.
-    R = np.eye(5) * 0.0000001
+    # P = np.eye(9) * 0.0000000001
+    # Q = np.eye(9) * 0.
+    # R = np.eye(5) * 0.0000001
+
+    # 1.0 noise
+    # P = np.eye(9) * 0.0000000001
+    # Q = np.eye(9) * 0.
+    # R = np.eye(5) * 0.0000001
 
     system.initialize_EKF(P, Q, R)
 
