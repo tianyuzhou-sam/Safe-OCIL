@@ -40,20 +40,16 @@ P = np.eye(9) * 0.00000000001
 Q = np.eye(9) * 0.
 R = np.eye(5) * 0.00000001
 
-# # 0.2 noise
+# # 0.2, 0.3 noise
 # P = np.eye(9) * 0.0000000001
 # Q = np.eye(9) * 0.
 # R = np.eye(5) * 0.0000001
 
-# 0.5 noise
+# 0.5-1.0 noise
 # P = np.eye(9) * 0.0000000001
 # Q = np.eye(9) * 0.
 # R = np.eye(5) * 0.0000001
 
-# 1.0 noise
-# P = np.eye(9) * 0.0000000001
-# Q = np.eye(9) * 0.
-# R = np.eye(5) * 0.0000001
 
 system.initialize_EKF(P, Q, R)
 

@@ -1,6 +1,7 @@
 import numpy as np
 import scipy.io as sio
 import matplotlib.pyplot as plt
+from matplotlib.ticker import MultipleLocator
 
 # Load the results file
 trails = 100
@@ -79,20 +80,6 @@ plt.legend(['Safe OCIL (Online)', 'Safe OCIL (Offline)', 'Safe PDP'], fontsize=2
 plt.tight_layout()
 plt.show()
 
-# for i in range(trails):
-#     results_file = f'examples/cartpole/data/results/SOCIL_noise2/results_{i+1}.mat'
-#     results = sio.loadmat(results_file)
-#     if i == 0:
-#         Loss_SOCIL_2 = results['Loss']
-#     else:
-#         Loss_SOCIL_2 = np.vstack((Loss_SOCIL_2, results['Loss']))
-
-# SOCIL_Loss_2_avg = np.mean(Loss_SOCIL_2, axis=0)
-# SOCIL_Loss_2_std = np.std(Loss_SOCIL_2, axis=0)
-# SOCIL_Loss_2_ub = SOCIL_Loss_2_avg + 3*SOCIL_Loss_2_std
-# SOCIL_Loss_2_lb = SOCIL_Loss_2_avg - 3*SOCIL_Loss_2_std
-# t_SOCIL_2 = np.arange(0, len(Loss_SOCIL_2[0]))
-
 for i in range(trails):
     results_file = f'examples/cartpole/data/results/SOCIL_noise4/results_{i+1}.mat'
     results = sio.loadmat(results_file)
@@ -138,7 +125,7 @@ plt.ylabel('Loss', fontsize=24)
 plt.grid(True, alpha=0.3)
 plt.xticks(fontsize=24)
 plt.yticks(fontsize=24)
-axs.set_xlim([0,25])
+axs.set_xlim([0,35])
 axs.set_ylim([1,1000])
 axs.set_yscale('log')
 sigmas = [0, 0.4, 1.0]
@@ -195,7 +182,7 @@ plt.tight_layout()
 plt.grid(True, alpha=0.3)
 plt.xticks(fontsize=24)
 plt.yticks(fontsize=24)
-plt.tick_params(axis='y', direction='in', pad=-15)  # negative pad moves labels inside
+plt.gca().yaxis.set_major_locator(MultipleLocator(1))
 axs.set_xlim([-1,36])
 axs.set_ylim([-2,2])
 axs.legend(['Demonstration', 'Safe OCIL', 'OCIL', 'Safety Boundary'], fontsize=24)
@@ -203,27 +190,27 @@ axs.legend(['Demonstration', 'Safe OCIL', 'OCIL', 'Safety Boundary'], fontsize=2
 plt.show()
 
 
-results_file = f'examples/cartpole/data/results/SOCIL04.mat'
-SOCIL04_results = sio.loadmat(results_file)
+results_file = f'examples/cartpole/data/results/SOCIL03.mat'
+SOCIL03_results = sio.loadmat(results_file)
 
-SOCIL04_control = SOCIL04_results['control'][-1]
-SOCIL04_state = SOCIL04_results['state'][-1][:,0]
-SOCIL04_demo_original = SOCIL04_results['demo_state_original'][:,0]
-SOCIL04_demo = SOCIL04_results['demo_state'][:,0]
+SOCIL03_control = SOCIL03_results['control'][-1]
+SOCIL03_state = SOCIL03_results['state'][-1][:,0]
+SOCIL03_demo_original = SOCIL03_results['demo_state_original'][:,0]
+SOCIL03_demo = SOCIL03_results['demo_state'][:,0]
 
-results_file = f'examples/cartpole/data/results/SOCIL10.mat'
-SOCIL10_results = sio.loadmat(results_file)
+results_file = f'examples/cartpole/data/results/SOCIL06.mat'
+SOCIL06_results = sio.loadmat(results_file)
 
-SOCIL10_control = SOCIL10_results['control'][-1]
-SOCIL10_state = SOCIL10_results['state'][-1][:,0]
-t_control10 = np.arange(0, len(SOCIL10_control))
-t_state10 = np.arange(0, len(SOCIL10_state))
+SOCIL06_control = SOCIL06_results['control'][-1]
+SOCIL06_state = SOCIL06_results['state'][-1][:,0]
+t_control06 = np.arange(0, len(SOCIL06_control))
+t_state06 = np.arange(0, len(SOCIL06_state))
 
 fig, axs = plt.subplots(1, 1, figsize=(10, 8))
 plt.plot(t_control, demo_control, 'r--', linewidth=3)
 # plt.plot(t_control, SOCIL_control, 'b--', linewidth=3)
-plt.plot(t_control, SOCIL04_control, 'g-', linewidth=3)
-plt.plot(t_control10, SOCIL10_control, 'y--', linewidth=3)
+plt.plot(t_control, SOCIL03_control, 'g-', linewidth=3)
+plt.plot(t_control06, SOCIL06_control, 'y--', linewidth=3)
 plt.axhline(y=5, color='k', linestyle='--', linewidth=5)
 plt.axhline(y=-5, color='k', linestyle='--', linewidth=5)
 # plt.plot(t_control, SOCIL_control, 'b--', linewidth=3)
@@ -238,16 +225,16 @@ plt.xticks(fontsize=24)
 plt.yticks(fontsize=24)
 axs.set_xlim([-1,35])
 plt.tight_layout()
-plt.legend(['Demonstration', fr'$\sigma=0.4$', fr'$\sigma=1.0$', 'Safety Boundary'], fontsize=24)
+plt.legend(['Demonstration', fr'$\sigma=0.3$', fr'$\sigma=0.6$', 'Safety Boundary'], fontsize=24)
 
 
 fig, axs = plt.subplots(1, 1, figsize=(10, 8))
 
-axs.plot(t_state, SOCIL04_demo, 'r--', linewidth=3)
-axs.plot(t_state, SOCIL04_demo_original, 'r-', linewidth=3)
+axs.plot(t_state, SOCIL03_demo, 'r--', linewidth=3)
+axs.plot(t_state, SOCIL03_demo_original, 'r-', linewidth=3)
 # axs.plot(t_state, SOCIL_state, 'b--', linewidth=3)
-axs.plot(t_state, SOCIL04_state, 'g-', linewidth=3)
-axs.plot(t_state10, SOCIL10_state, 'y--', linewidth=3)
+axs.plot(t_state, SOCIL03_state, 'g-', linewidth=3)
+axs.plot(t_state06, SOCIL06_state, 'y--', linewidth=3)
 plt.axhline(y=0.8, color='k', linestyle='--', linewidth=5)
 plt.axhline(y=-0.8, color='k', linestyle='--', linewidth=5)
 # axs.plot(t_state, SOCIL_state, 'b--', linewidth=3)
@@ -259,9 +246,9 @@ plt.tight_layout()
 plt.grid(True, alpha=0.3)
 plt.xticks(fontsize=24)
 plt.yticks(fontsize=24)
-plt.tick_params(axis='y', direction='in', pad=-15)  # negative pad moves labels inside
+plt.gca().yaxis.set_major_locator(MultipleLocator(1))
 axs.set_xlim([-1,36])
 axs.set_ylim([-1.5,2])
-axs.legend(['Noisy Measurement', 'Ground Truth', fr'$\sigma=0.4$', fr'$\sigma=1.0$', 'Safety Boundary'], fontsize=24)
+axs.legend(['Noisy Measurement', 'Ground Truth', fr'$\sigma=0.3$', fr'$\sigma=0.6$', 'Safety Boundary'], fontsize=24)
 
 plt.show()

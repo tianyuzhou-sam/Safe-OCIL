@@ -14,11 +14,12 @@ saveFlag = False
 dynsys = JinEnv.CartPole()
 dynsys.initDyn()
 dynsys.initCost(wu = 0.1)
+noise = 0.
 
 dir = 'examples/cartpole/data/'
 demoFile = 'cartpole_OCIL_original_constrained.mat'
 
-system = OCIL.ImitationLearning(project, mode, dynsys, dir, demoFile, saveFlag)
+system = OCIL.ImitationLearning(project, mode, dynsys, noise, dir, demoFile, saveFlag)
 
 # initial guess
 data = sio.loadmat(dir+demoFile)

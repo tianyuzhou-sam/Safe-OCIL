@@ -47,17 +47,12 @@ for i in range(trails):
     Q = np.eye(9) * 0.
     R = np.eye(5) * 0.00000001
     
-    # # 0.2 noise
+    # # 0.2-0.5 noise
     # P = np.eye(9) * 0.0000000001
     # Q = np.eye(9) * 0.
     # R = np.eye(5) * 0.0000001
 
-    # 0.5 noise
-    # P = np.eye(9) * 0.0000000001
-    # Q = np.eye(9) * 0.
-    # R = np.eye(5) * 0.0000001
-
-    # 1.0 noise
+    # 0.6-1.0 noise
     # P = np.eye(9) * 0.0000000001
     # Q = np.eye(9) * 0.
     # R = np.eye(5) * 0.0000001

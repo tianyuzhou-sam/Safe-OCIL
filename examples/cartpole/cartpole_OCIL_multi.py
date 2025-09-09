@@ -15,6 +15,7 @@ saveFlag = False
 dir = 'examples/cartpole/data/'
 demoFile = 'cartpole_original_constrained.mat'
 trails = 100
+noise = 0.0
 
 # initial guess
 data = sio.loadmat(dir+demoFile)
@@ -30,7 +31,7 @@ for i in range(trails):
     dynsys = JinEnv.CartPole()
     dynsys.initDyn()
     dynsys.initCost(wu = 0.1)
-    system = OCIL.ImitationLearning(project, mode, dynsys, dir, demoFile, saveFlag)
+    system = OCIL.ImitationLearning(project, mode, dynsys, noise, dir, demoFile, saveFlag)
 
     initial_theta = true_theta + 2*sigma * (random_number[i] - 0.5)
     print('initial_theta = ', initial_theta)

@@ -13,7 +13,7 @@ from Loss_function import Loss
 
 
 class ImitationLearning:
-    def __init__(self, project="", mode="", dynsys=None, dir="", demoFile="", saveFlag=False):
+    def __init__(self, project="", mode="", dynsys=None, noise=0.0, dir="", demoFile="", saveFlag=False):
 
         if not (mode == "Objective" or mode == "Dynamic" or mode == "All"):
             print("Mode not defined!")
@@ -70,10 +70,13 @@ class ImitationLearning:
 
         self.loss = 0
         self.dp = np.zeros(self.theta.shape)
-        self.demo_state_traj = self.trajectories[0, 0]['state_traj_opt']
+        self.demo_state_traj_original = self.trajectories[0, 0]['state_traj_opt']
         self.demo_control_traj = self.trajectories[0, 0]['control_traj_opt']
-        self.demo_ini_state = self.demo_state_traj[0, :]
+        self.demo_ini_state = self.demo_state_traj_original[0, :]
         self.demo_horizon = self.demo_control_traj.shape[0]
+
+        self.demo_state_traj = self.demo_state_traj_original + np.random.normal(0, noise, (self.demo_horizon+1,len(self.demo_ini_state)))
+        
 
         # ------------------------------ other setup ------------------------------
         self.iteration = 1

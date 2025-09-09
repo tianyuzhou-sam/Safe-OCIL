@@ -101,7 +101,7 @@ class ImitationLearning:
         self.u_his = []
         self.theta_his = []
         self.cost_his = []
-        self.barrier_cost_his = []  # Barrier costs from getCost
+        self.g_value_his = []
 
     def initialize_theta(self, initial_theta):
         self.theta = initial_theta
@@ -240,6 +240,7 @@ class ImitationLearning:
                 self.x_his += [state_traj]
                 self.u_his += [control_traj]
                 self.theta_his += [self.theta]
+                self.getCost(state_traj, control_traj, self.theta)
                 print('Time = ' + str(time.time()-data_start_time))
 
                 # self.plotTraj(state_traj, control_traj)
@@ -257,7 +258,7 @@ class ImitationLearning:
         # self.plotTraj(state_traj, control_traj)
         if self.saveFlag:
             self.saveAll()
-        
+
         # self.plotLoss()
 
     def evaluateLoss(self, state_traj, control_traj):
@@ -272,42 +273,39 @@ class ImitationLearning:
         self.Loss_his += [np.asarray(Loss)[0,0]]
 
     def getCost(self, state_traj, control_traj, theta):
-        cost = 0
-        barrier_sum = 0
+        g_value = 0
         
         for idx in range(self.demo_horizon):
-            # Original cost
-            cost += self.sysoc.path_cost_fn(state_traj[idx], control_traj[idx], theta)
-            
             # Path inequality barriers
             if hasattr(self.sysoc, 'path_inequ_cstr') and self.sysoc.path_inequ_cstr is not None:
                 path_inequ_values = self.sysoc.path_inequ_cstr_fn(state_traj[idx], control_traj[idx], theta).full().flatten()
                 for k in range(len(path_inequ_values)):
-                    barrier_sum += 1/self.beta /self.alpha* log(1 + exp(self.beta * path_inequ_values[k]))
-                    # print(path_inequ_values[k])
+                    if path_inequ_values[k] > 0:
+                        g_value += path_inequ_values[k]
             
             # Path equality barriers
             if hasattr(self.sysoc, 'path_equ_cstr') and self.sysoc.path_equ_cstr is not None:
                 path_equ_values = self.sysoc.path_equ_cstr_fn(state_traj[idx], control_traj[idx], theta).full().flatten()
                 for k in range(len(path_equ_values)):
-                    barrier_sum += 0.5 / self.gamma * (path_equ_values[k])**2
-        
-        # Final cost
-        cost += self.sysoc.final_cost_fn(state_traj[-1], theta)
+                    if path_equ_values[k] > 0:
+                        g_value += path_equ_values[k]
         
         # Final inequality barriers
         if hasattr(self.sysoc, 'final_inequ_cstr') and self.sysoc.final_inequ_cstr is not None:
             final_inequ_values = self.sysoc.final_inequ_cstr_fn(state_traj[-1], theta).full().flatten()
             for k in range(len(final_inequ_values)):
-                barrier_sum += 1/self.beta /self.alpha* log(1 + exp(self.beta * final_inequ_values[k]))
+                if final_inequ_values[k] > 0:
+                    g_value += final_inequ_values[k]
         
         # Final equality barriers
         if hasattr(self.sysoc, 'final_equ_cstr') and self.sysoc.final_equ_cstr is not None:
             final_equ_values = self.sysoc.final_equ_cstr_fn(state_traj[-1], theta).full().flatten()
             for k in range(len(final_equ_values)):
-                barrier_sum += 0.5 / self.gamma * (final_equ_values[k])**2
+                if final_equ_values[k] > 0:
+                    g_value += final_equ_values[k]
         
-        return cost, barrier_sum
+        self.g_value_his += [g_value]
+        print('g_value = ', g_value)
         
 
     def saveEach(self, idx, traj, loss_his):
