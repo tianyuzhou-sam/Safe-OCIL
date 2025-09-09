@@ -95,26 +95,26 @@ SOCIL_Loss_4_lb = SOCIL_Loss_4_avg - 3*SOCIL_Loss_4_std
 t_SOCIL_4 = np.arange(0, len(Loss_SOCIL_4[0]))
 
 for i in range(trails):
-    results_file = f'examples/cartpole/data/results/SOCIL_noise10/results_{i+1}.mat'
+    results_file = f'examples/cartpole/data/results/SOCIL_noise08/results_{i+1}.mat'
     results = sio.loadmat(results_file)
     if i == 0:
-        Loss_SOCIL_10 = results['Loss']
+        Loss_SOCIL_08 = results['Loss']
     else:
-        Loss_SOCIL_10 = np.vstack((Loss_SOCIL_10, results['Loss']))
+        Loss_SOCIL_08 = np.vstack((Loss_SOCIL_08, results['Loss']))
 
-SOCIL_Loss_10_avg = np.mean(Loss_SOCIL_10, axis=0)
-SOCIL_Loss_10_std = np.std(Loss_SOCIL_10, axis=0)
-SOCIL_Loss_10_ub = SOCIL_Loss_10_avg + 3*SOCIL_Loss_10_std
-SOCIL_Loss_10_lb = SOCIL_Loss_10_avg - 3*SOCIL_Loss_10_std
-t_SOCIL_10 = np.arange(0, len(Loss_SOCIL_10[0]))
+SOCIL_Loss_08_avg = np.mean(Loss_SOCIL_08, axis=0)
+SOCIL_Loss_08_std = np.std(Loss_SOCIL_08, axis=0)
+SOCIL_Loss_08_ub = SOCIL_Loss_08_avg + 3*SOCIL_Loss_08_std
+SOCIL_Loss_08_lb = SOCIL_Loss_08_avg - 3*SOCIL_Loss_08_std
+t_SOCIL_08 = np.arange(0, len(Loss_SOCIL_08[0]))
 
 fig, axs = plt.subplots(1, 1, figsize=(10, 8))
 plt.plot(t_SOCIL, SOCIL_Loss_avg, 'b-', linewidth=3)
 plt.plot(t_SOCIL_4, SOCIL_Loss_4_avg, 'g--', linewidth=3)
-plt.plot(t_SOCIL_10, SOCIL_Loss_10_avg, '-', color='yellow', linewidth=5)
+plt.plot(t_SOCIL_08, SOCIL_Loss_08_avg, '-', color='yellow', linewidth=5)
 plt.plot(t_SOCIL, SOCIL_Loss_avg, 'b-', linewidth=3)
 plt.plot(t_SOCIL_4, SOCIL_Loss_4_avg, 'g--', linewidth=3)
-axs.fill_between(t_SOCIL_10, SOCIL_Loss_10_lb, SOCIL_Loss_10_ub, color='yellow')
+axs.fill_between(t_SOCIL_08, SOCIL_Loss_08_lb, SOCIL_Loss_08_ub, color='yellow')
 axs.fill_between(t_SOCIL_4, SOCIL_Loss_4_lb, SOCIL_Loss_4_ub, color='lightcoral')
 axs.fill_between(t_SOCIL, SOCIL_Loss_lb, SOCIL_Loss_ub, color='lightskyblue')
 
@@ -128,7 +128,7 @@ plt.yticks(fontsize=24)
 axs.set_xlim([0,35])
 axs.set_ylim([1,1000])
 axs.set_yscale('log')
-sigmas = [0, 0.4, 1.0]
+sigmas = [0, 0.4, 0.8]
 axs.legend([fr'$\sigma={s}$' for s in sigmas], fontsize=24)
 plt.tight_layout()
 plt.show()

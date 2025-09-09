@@ -15,7 +15,7 @@ saveFlag = False
 trails = 100
 dir = 'examples/cartpole/data/'
 demoFile = 'cartpole_original_constrained.mat'
-noise = 1.0
+noise = 0.8
 alpha = 4*7.5*1e-2
 beta = 7.5*1e-2
 
@@ -53,9 +53,9 @@ for i in range(trails):
     # R = np.eye(5) * 0.0000001
 
     # 0.6-1.0 noise
-    # P = np.eye(9) * 0.0000000001
-    # Q = np.eye(9) * 0.
-    # R = np.eye(5) * 0.0000001
+    P = np.eye(9) * 0.0000000001
+    Q = np.eye(9) * 0.
+    R = np.eye(5) * 0.0000001
 
     system.initialize_EKF(P, Q, R)
 
