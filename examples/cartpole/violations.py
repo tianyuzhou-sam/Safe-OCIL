@@ -19,25 +19,25 @@ SOCIL_state = SOCIL_results['state'][-1][:,0]
 OCIL_control = OCIL_results['control'][-1]
 OCIL_state = OCIL_results['state'][-1][:,0]
 
-results_file = f'examples/cartpole/data/results/SOCIL03.mat'
-SOCIL03_results = sio.loadmat(results_file)
-SOCIL03_control = SOCIL03_results['control'][-1]
-SOCIL03_state = SOCIL03_results['state'][-1][:,0]
+results_file = f'examples/cartpole/data/results/SOCIL04.mat'
+SOCIL04_results = sio.loadmat(results_file)
+SOCIL04_control = SOCIL04_results['control'][-1]
+SOCIL04_state = SOCIL04_results['state'][-1][:,0]
 
-results_file = f'examples/cartpole/data/results/SOCIL06.mat'
-SOCIL06_results = sio.loadmat(results_file)
-SOCIL06_control = SOCIL06_results['control'][-1]
-SOCIL06_state = SOCIL06_results['state'][-1][:,0]
+results_file = f'examples/cartpole/data/results/SOCIL08.mat'
+SOCIL08_results = sio.loadmat(results_file)
+SOCIL08_control = SOCIL08_results['control'][-1]
+SOCIL08_state = SOCIL08_results['state'][-1][:,0]
 
-results_file = f'examples/cartpole/data/results/OCIL03.mat'
-OCIL03_results = sio.loadmat(results_file)
-OCIL03_control = OCIL03_results['control'][-1]
-OCIL03_state = OCIL03_results['state'][-1][:,0]
+results_file = f'examples/cartpole/data/results/OCIL04.mat'
+OCIL04_results = sio.loadmat(results_file)
+OCIL04_control = OCIL04_results['control'][-1]
+OCIL04_state = OCIL04_results['state'][-1][:,0]
 
-results_file = f'examples/cartpole/data/results/OCIL06.mat'
-OCIL06_results = sio.loadmat(results_file)
-OCIL06_control = OCIL06_results['control'][-1]
-OCIL06_state = OCIL06_results['state'][-1][:,0]
+results_file = f'examples/cartpole/data/results/OCIL08.mat'
+OCIL08_results = sio.loadmat(results_file)
+OCIL08_control = OCIL08_results['control'][-1]
+OCIL08_state = OCIL08_results['state'][-1][:,0]
 
 horizon = len(demo_control)
 
@@ -79,78 +79,78 @@ print('OCIL_control_max_violation = ', OCIL_control_max_violation/u_max)
 print('OCIL_state_violations = ', OCIL_state_violations/horizon)
 print('OCIL_state_max_violation = ', OCIL_state_max_violation/x_max)
 
-SOCIL03_control_violations = 0
-SOCIL03_control_max_violation = 0
-SOCIL03_state_violations = 0
-SOCIL03_state_max_violation = 0
+SOCIL04_control_violations = 0
+SOCIL04_control_max_violation = 0
+SOCIL04_state_violations = 0
+SOCIL04_state_max_violation = 0
 for i in range(horizon):
-    if abs(SOCIL03_control[i]) > u_max:
-        SOCIL03_control_violations += 1
-        if abs(SOCIL03_control[i]) - u_max > SOCIL03_control_max_violation:
-            SOCIL03_control_max_violation = abs(SOCIL03_control[i]) - u_max
-    if abs(SOCIL03_state[i+1]) > x_max:
-        SOCIL03_state_violations += 1
-        if abs(SOCIL03_state[i+1]) - x_max > SOCIL03_state_max_violation:
-            SOCIL03_state_max_violation = abs(SOCIL03_state[i+1]) - x_max
+    if abs(SOCIL04_control[i]) > u_max:
+        SOCIL04_control_violations += 1
+        if abs(SOCIL04_control[i]) - u_max > SOCIL04_control_max_violation:
+            SOCIL04_control_max_violation = abs(SOCIL04_control[i]) - u_max
+    if abs(SOCIL04_state[i+1]) > x_max:
+        SOCIL04_state_violations += 1
+        if abs(SOCIL04_state[i+1]) - x_max > SOCIL04_state_max_violation:
+            SOCIL04_state_max_violation = abs(SOCIL04_state[i+1]) - x_max
 
-print('SOCIL03_control_violations = ', SOCIL03_control_violations/horizon)
-print('SOCIL03_control_max_violation = ', SOCIL03_control_max_violation/u_max)
-print('SOCIL03_state_violations = ', SOCIL03_state_violations/horizon)
-print('SOCIL03_state_max_violation = ', SOCIL03_state_max_violation/x_max)
+print('SOCIL04_control_violations = ', SOCIL04_control_violations/horizon)
+print('SOCIL04_control_max_violation = ', SOCIL04_control_max_violation/u_max)
+print('SOCIL04_state_violations = ', SOCIL04_state_violations/horizon)
+print('SOCIL04_state_max_violation = ', SOCIL04_state_max_violation/x_max)
 
-OCIL03_control_violations = 0
-OCIL03_control_max_violation = 0
-OCIL03_state_violations = 0
-OCIL03_state_max_violation = 0
+OCIL04_control_violations = 0
+OCIL04_control_max_violation = 0
+OCIL04_state_violations = 0
+OCIL04_state_max_violation = 0
 for i in range(horizon):
-    if abs(OCIL03_control[i]) > u_max:
-        OCIL03_control_violations += 1
-        if abs(OCIL03_control[i]) - u_max > OCIL03_control_max_violation:
-            OCIL03_control_max_violation = abs(OCIL03_control[i]) - u_max
-    if abs(OCIL03_state[i+1]) > x_max:
-        OCIL03_state_violations += 1
-        if abs(OCIL03_state[i+1]) - x_max > OCIL03_state_max_violation:
-            OCIL03_state_max_violation = abs(OCIL03_state[i+1]) - x_max
+    if abs(OCIL04_control[i]) > u_max:
+        OCIL04_control_violations += 1
+        if abs(OCIL04_control[i]) - u_max > OCIL04_control_max_violation:
+            OCIL04_control_max_violation = abs(OCIL04_control[i]) - u_max
+    if abs(OCIL04_state[i+1]) > x_max:
+        OCIL04_state_violations += 1
+        if abs(OCIL04_state[i+1]) - x_max > OCIL04_state_max_violation:
+            OCIL04_state_max_violation = abs(OCIL04_state[i+1]) - x_max
 
-print('OCIL03_control_violations = ', OCIL03_control_violations/horizon)
-print('OCIL03_control_max_violation = ', OCIL03_control_max_violation/u_max)
-print('OCIL03_state_violations = ', OCIL03_state_violations/horizon)
-print('OCIL03_state_max_violation = ', OCIL03_state_max_violation/x_max)
+print('OCIL04_control_violations = ', OCIL04_control_violations/horizon)
+print('OCIL04_control_max_violation = ', OCIL04_control_max_violation/u_max)
+print('OCIL04_state_violations = ', OCIL04_state_violations/horizon)
+print('OCIL04_state_max_violation = ', OCIL04_state_max_violation/x_max)
 
-SOCIL06_control_violations = 0
-SOCIL06_control_max_violation = 0
-SOCIL06_state_violations = 0
-SOCIL06_state_max_violation = 0
+SOCIL08_control_violations = 0
+SOCIL08_control_max_violation = 0
+SOCIL08_state_violations = 0
+SOCIL08_state_max_violation = 0
 for i in range(horizon):
-    if abs(SOCIL06_control[i]) > u_max:
-        SOCIL06_control_violations += 1
-        if abs(SOCIL06_control[i]) - u_max > SOCIL06_control_max_violation:
-            SOCIL06_control_max_violation = abs(SOCIL06_control[i]) - u_max
-    if abs(SOCIL06_state[i+1]) > x_max:
-        SOCIL06_state_violations += 1
-        if abs(SOCIL06_state[i+1]) - x_max > SOCIL06_state_max_violation:
-            SOCIL06_state_max_violation = abs(SOCIL06_state[i+1]) - x_max
+    if abs(SOCIL08_control[i]) > u_max:
+        SOCIL08_control_violations += 1
+        if abs(SOCIL08_control[i]) - u_max > SOCIL08_control_max_violation:
+            SOCIL08_control_max_violation = abs(SOCIL08_control[i]) - u_max
+    if abs(SOCIL08_state[i+1]) > x_max:
+        SOCIL08_state_violations += 1
+        if abs(SOCIL08_state[i+1]) - x_max > SOCIL08_state_max_violation:
+            SOCIL08_state_max_violation = abs(SOCIL08_state[i+1]) - x_max
 
-print('SOCIL06_control_violations = ', SOCIL06_control_violations/horizon)
-print('SOCIL06_control_max_violation = ', SOCIL06_control_max_violation/u_max)
-print('SOCIL06_state_violations = ', SOCIL06_state_violations/horizon)
-print('SOCIL06_state_max_violation = ', SOCIL06_state_max_violation/x_max)
+print('SOCIL08_control_violations = ', SOCIL08_control_violations/horizon)
+print('SOCIL08_control_max_violation = ', SOCIL08_control_max_violation/u_max)
+print('SOCIL08_state_violations = ', SOCIL08_state_violations/horizon)
+print('SOCIL08_state_max_violation = ', SOCIL08_state_max_violation/x_max)
 
-OCIL06_control_violations = 0
-OCIL06_control_max_violation = 0
-OCIL06_state_violations = 0
-OCIL06_state_max_violation = 0
+OCIL08_control_violations = 0
+OCIL08_control_max_violation = 0
+OCIL08_state_violations = 0
+OCIL08_state_max_violation = 0
 for i in range(horizon):
-    if abs(OCIL06_control[i]) > u_max:
-        OCIL06_control_violations += 1
-        if abs(OCIL06_control[i]) - u_max > OCIL06_control_max_violation:
-            OCIL06_control_max_violation = abs(OCIL06_control[i]) - u_max
-    if abs(OCIL06_state[i+1]) > x_max:
-        OCIL06_state_violations += 1
-        if abs(OCIL06_state[i+1]) - x_max > OCIL06_state_max_violation:
-            OCIL06_state_max_violation = abs(OCIL06_state[i+1]) - x_max
+    if abs(OCIL08_control[i]) > u_max:
+        OCIL08_control_violations += 1
+        if abs(OCIL08_control[i]) - u_max > OCIL08_control_max_violation:
+            OCIL08_control_max_violation = abs(OCIL08_control[i]) - u_max
+    if abs(OCIL08_state[i+1]) > x_max:
+        OCIL08_state_violations += 1
+        if abs(OCIL08_state[i+1]) - x_max > OCIL08_state_max_violation:
+            OCIL08_state_max_violation = abs(OCIL08_state[i+1]) - x_max
 
-print('OCIL06_control_violations = ', OCIL06_control_violations/horizon)
-print('OCIL06_control_max_violation = ', OCIL06_control_max_violation/u_max)
-print('OCIL06_state_violations = ', OCIL06_state_violations/horizon)
-print('OCIL06_state_max_violation = ', OCIL06_state_max_violation/x_max)
+print('OCIL08_control_violations = ', OCIL08_control_violations/horizon)
+print('OCIL08_control_max_violation = ', OCIL08_control_max_violation/u_max)
+print('OCIL08_state_violations = ', OCIL08_state_violations/horizon)
+print('OCIL08_state_max_violation = ', OCIL08_state_max_violation/x_max)
