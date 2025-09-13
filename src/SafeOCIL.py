@@ -255,11 +255,11 @@ class ImitationLearning:
         # self.u_his += [control_traj]
 
         # --------------------------- save all Loss ---------------------------
-        # self.plotTraj(state_traj, control_traj)
+        self.plotTraj(state_traj, control_traj)
         if self.saveFlag:
             self.saveAll()
 
-        # self.plotLoss()
+        self.plotLoss()
 
     def evaluateLoss(self, state_traj, control_traj):
         Loss = 0
@@ -305,7 +305,7 @@ class ImitationLearning:
                     g_value += final_equ_values[k]
         
         self.g_value_his += [g_value]
-        print('g_value = ', g_value)
+        # print('g_value = ', g_value)
         
 
     def saveEach(self, idx, traj, loss_his):

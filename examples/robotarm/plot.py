@@ -1,6 +1,14 @@
 import numpy as np
 import scipy.io as sio
 import matplotlib.pyplot as plt
+from matplotlib.ticker import MultipleLocator
+
+params = {'axes.labelsize': 28,
+          'axes.titlesize': 28,
+          'xtick.labelsize': 20,
+          'ytick.labelsize': 20,
+          'legend.fontsize': 20}
+plt.rcParams.update(params)
 
 # Load the results file
 trails = 100
@@ -120,6 +128,96 @@ plt.show()
 # axs[0].legend(['Observed Trajectory', 'Ground Truth', 'Learned Trajectory'], fontsize=12)
 
 # plt.show()
+
+results_file = f'examples/robotarm/data/results/SOCIL03.mat'
+SOCIL03_results = sio.loadmat(results_file)
+SOCIL03_control = SOCIL03_results['control'][-1]
+SOCIL03_state = SOCIL03_results['state'][-1]
+SOCIL03_demo_original = SOCIL03_results['demo_state_original']
+SOCIL03_demo = SOCIL03_results['demo_state']
+demo_control = SOCIL03_results['demo_control']
+t_control = np.arange(0, len(demo_control[:,0]))
+t_state = np.arange(0, len(SOCIL03_demo[:,0]))
+
+
+results_file = f'examples/robotarm/data/results/OCIL03.mat'
+OCIL03_results = sio.loadmat(results_file)
+
+OCIL03_control = OCIL03_results['control'][-1]
+OCIL03_state = OCIL03_results['state'][-1]
+
+
+fig, axs = plt.subplots(2, 1, figsize=(8, 8))
+
+axs[0].plot(t_control, demo_control[:,0], 'r--', linewidth=5)
+axs[0].plot(t_control, SOCIL03_control[:,0], 'b-', linewidth=5)
+axs[0].plot(t_control, OCIL03_control[:,0], 'g-', linewidth=5)
+axs[0].axhline(y=1, color='k', linestyle='--', linewidth=5)
+axs[0].axhline(y=-1, color='k', linestyle='--', linewidth=5)
+axs[0].plot(t_control, SOCIL03_control[:,0], 'b-', linewidth=5)
+axs[0].plot(t_control, demo_control[:,0], 'r--', linewidth=5)
+axs[0].fill_between([-1,25], 1, -1, color='#EFEFEF', alpha=1)
+axs[0].set_xlabel(f'{r'$t$'}', labelpad=0)
+axs[0].set_ylabel(f'{r'$u_1$'}', labelpad=0)
+axs[0].grid(True, alpha=0.3)
+axs[0].set_xlim([-1,25])
+axs[0].legend(['Ground Truth', 'Safe OCIL', 'OCIL'], fontsize=20)
+
+# Control plot (bottom subplot)
+axs[1].plot(t_control, demo_control[:,1], 'r--', linewidth=5)
+axs[1].plot(t_control, SOCIL03_control[:,1], 'b-', linewidth=5)
+axs[1].plot(t_control, OCIL03_control[:,1], 'g-', linewidth=5)
+axs[1].axhline(y=1, color='k', linestyle='--', linewidth=5)
+axs[1].axhline(y=-1, color='k', linestyle='--', linewidth=5)
+axs[1].plot(t_control, SOCIL03_control[:,1], 'b-', linewidth=5)
+axs[1].plot(t_control, demo_control[:,1], 'r--', linewidth=5)
+axs[1].fill_between([-1,25], 1, -1, color='#EFEFEF', alpha=1)
+axs[1].set_xlabel(f'{r'$t$'}', labelpad=0)
+axs[1].set_ylabel(f'{r'$u_2$'}', labelpad=0)
+axs[1].grid(True, alpha=0.3)
+axs[1].set_xlim([-1,25])
+
+
+plt.tight_layout()
+plt.subplots_adjust(hspace=0.1)
+
+
+
+fig, axs = plt.subplots(2, 1, figsize=(8, 8))
+
+axs[0].plot(t_state, SOCIL03_demo_original[:,0], 'r--', linewidth=3)
+axs[0].plot(t_state, SOCIL03_state[:,0], 'b-', linewidth=3)
+axs[0].plot(t_state, OCIL03_state[:,0], 'g-', linewidth=3)
+axs[0].axhline(y=np.pi, color='k', linestyle='--', linewidth=5)
+axs[0].axhline(y=-np.pi, color='k', linestyle='--', linewidth=5)
+axs[0].plot(t_state, SOCIL03_state[:,0], 'b-', linewidth=3)
+axs[0].plot(t_state, SOCIL03_demo_original[:,0], 'r--', linewidth=3)
+axs[0].fill_between([-1,25], np.pi, -np.pi, color='#EFEFEF', alpha=1)
+axs[0].set_xlabel(f'{r'$t$'}', labelpad=0)
+axs[0].set_ylabel(f'{r'$q_1$'}', labelpad=0)
+axs[0].grid(True, alpha=0.3)
+axs[0].set_xlim([-1,25])
+axs[0].legend(['Ground Truth', 'Safe OCIL', 'OCIL'], fontsize=20)
+
+# Control plot (bottom subplot)
+axs[1].plot(t_state, SOCIL03_demo_original[:,1], 'r--', linewidth=3)
+axs[1].plot(t_state, SOCIL03_state[:,1], 'b-', linewidth=3)
+axs[1].plot(t_state, OCIL03_state[:,1], 'g-', linewidth=3)
+axs[1].axhline(y=np.pi, color='k', linestyle='--', linewidth=5)
+axs[1].axhline(y=-np.pi, color='k', linestyle='--', linewidth=5)
+axs[1].plot(t_state, SOCIL03_state[:,1], 'b-', linewidth=3)
+axs[1].plot(t_state, SOCIL03_demo_original[:,1], 'r--', linewidth=3)
+axs[1].fill_between([-1,25], np.pi, -np.pi, color='#EFEFEF', alpha=1)
+axs[1].set_xlabel(f'{r'$t$'}', labelpad=0)
+axs[1].set_ylabel(f'{r'$q_2$'}', labelpad=0)
+axs[1].grid(True, alpha=0.3)
+axs[1].set_xlim([-1,25])
+
+
+plt.tight_layout()
+plt.subplots_adjust(hspace=0.1)
+plt.show()
+
 
     
 
