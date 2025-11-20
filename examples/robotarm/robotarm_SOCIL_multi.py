@@ -3,6 +3,7 @@ from casadi import *
 import scipy.io as sio
 import os
 import sys
+import copy
 sys.path.append(os.getcwd() + '/src')
 import SafeOCIL
 import JinEnv
@@ -23,7 +24,7 @@ beta = 10*1e-2
 # initial guess
 data = sio.loadmat(dir+demoFile)
 true_theta = data['true_parameter'].flatten()
-sigma = 0.25
+sigma = 0.6
 nn_seed = 100
 np.random.seed(nn_seed)
 random_number = np.random.random(len(true_theta))
@@ -38,15 +39,14 @@ for i in range(trails):
 
     system = SafeOCIL.ImitationLearning(project, mode, dynsys, noise, alpha, beta, dir, demoFile, saveFlag)
 
-    initial_theta = true_theta
+    initial_theta = copy.deepcopy(true_theta)
     for idx in range(len(true_theta)):
-            initial_theta[idx] = true_theta[idx] + 2*sigma * (random_number[i,idx] - 0.5)*true_theta[idx]
-    print('initial_theta = ', initial_theta)
+        initial_theta[idx] = true_theta[idx] + 2*sigma * (random_number[i,idx] - 0.5)*true_theta[idx]
     system.initialize_theta(initial_theta)
     system.set_iteration(5)
 
     # --------------------------- initilize EKF ----------------------------------------
-    P = np.eye(10) * 0.00000001
+    P = np.eye(10) * 0.000000001
     Q = np.eye(10) * 0.
     R = np.eye(6) * 0.00000001
 

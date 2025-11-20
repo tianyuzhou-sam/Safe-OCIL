@@ -295,6 +295,144 @@ class COCsys:
 
         return opt_sol
 
+    def ocSolverWithRef(self, init_state, horizon, auxvar_value, ref, print_level=0, costate_option=0):
+        if not hasattr(self, 'final_equ_cstr'):
+            self.setFinalEquCstr()
+        if not hasattr(self, 'final_inequ_cstr'):
+            self.setFinalInequCstr()
+        if not hasattr(self, 'path_equ_cstr'):
+            self.setPathEquCstr()
+        if not hasattr(self, 'path_inequ_cstr'):
+            self.setPathInequCstr()
+        if not hasattr(self, 'final_cost'):
+            self.setFinalCost()
+
+        if init_state is None:
+            init_state = self.init_condition_fn(auxvar_value).full().flatten().tolist()
+        else:
+            init_state = casadi.DM(init_state).full().flatten().tolist()
+
+        # Start with an empty NLP
+        w = []
+        w0 = []
+        lbw = []
+        ubw = []
+        J = 0
+        g = []
+        lbg = []
+        ubg = []
+
+        # "Lift" initial conditions
+        Xk = MX.sym('X0', self.n_state)
+        w += [Xk]
+        lbw += init_state
+        ubw += init_state
+        w0 = ref['state_traj_opt'][0,:]
+
+        # formulate the NLP
+        for k in range(horizon):
+            # New NLP variable for the control
+            Uk = MX.sym('U_' + str(k), self.n_control)
+            w += [Uk]
+            lbw += self.control_lb
+            ubw += self.control_ub
+            w0 = np.hstack((w0, ref['control_traj_opt'][k,:]))
+
+            # Add constraint for the path inequality if exist
+            if self.path_inequ_cstr is not None:
+                g += [self.path_inequ_cstr_fn(Xk, Uk, auxvar_value)]
+                lbg += self.n_path_inequ_cstr * [- self.inf]
+                ubg += self.n_path_inequ_cstr * [0]
+
+            # Add constraint for the path equality if exist
+            if self.path_equ_cstr is not None:
+                g += [self.path_equ_cstr_fn(Xk, Uk, auxvar_value)]
+                lbg += self.n_path_equ_cstr * [0]
+                ubg += self.n_path_equ_cstr * [0]
+
+            # Integrate till the end of the interval
+            Xnext = self.dyn_fn(Xk, Uk, auxvar_value)
+            Ck = self.path_cost_fn(Xk, Uk, auxvar_value)
+            J = J + Ck
+
+            # New NLP variable for state at end of interval
+            Xk = MX.sym('X_' + str(k + 1), self.n_state)
+            w += [Xk]
+            lbw += self.state_lb
+            ubw += self.state_ub
+            w0 = np.hstack((w0, ref['state_traj_opt'][k,:]))
+
+            # Add constraint for the dynamics
+            g += [Xnext - Xk]
+            lbg += self.n_state * [0]
+            ubg += self.n_state * [0]
+
+        # Add final inequality constraint if exist
+        if self.final_inequ_cstr is not None:
+            g += [self.final_inequ_cstr_fn(Xk, auxvar_value)]
+            lbg += self.n_final_inequ_cstr * [- self.inf]
+            ubg += self.n_final_inequ_cstr * [0]
+
+        # Add final equality constraint if exist
+        if self.final_equ_cstr is not None:
+            g += [self.final_equ_cstr_fn(Xk, auxvar_value)]
+            lbg += self.n_final_equ_cstr * [0]
+            ubg += self.n_final_equ_cstr * [0]
+
+        # Add the final cost
+        J = J + self.final_cost_fn(Xk, auxvar_value)
+
+        # Create an NLP solver and solve
+        opts = {'ipopt.print_level': print_level, 'ipopt.sb': 'yes', 'print_time': print_level}
+        prob = {'f': J, 'x': vertcat(*w), 'g': vertcat(*g)}
+        solver = nlpsol('solver', 'ipopt', prob, opts)
+        # Solve the NLP
+        sol = solver(x0=w0, lbx=lbw, ubx=ubw, lbg=lbg, ubg=ubg)
+        w_opt = sol['x'].full().flatten()
+        lam_g = sol['lam_g'].full().flatten()
+        g = sol['g'].full().flatten()
+
+        # extract the optimal control and state
+        sol_traj = numpy.concatenate((w_opt, self.n_control * [0]))
+        sol_traj = numpy.reshape(sol_traj, (-1, self.n_state + self.n_control))
+        state_traj_opt = sol_traj[:, 0:self.n_state]
+        control_traj_opt = numpy.delete(sol_traj[:, self.n_state:], -1, 0)
+        time = numpy.array([k for k in range(horizon + 1)])
+
+        # compute the costate trajectory, mu trajectory and nu trajectory (the latter two is Lagrangian multipliers)
+        v_w_lam_path = numpy.reshape(lam_g[:lam_g.size - self.n_final_inequ_cstr - self.n_final_equ_cstr],
+                                     (-1, self.n_state + self.n_path_equ_cstr + self.n_path_inequ_cstr))
+        v_path = v_w_lam_path[:, 0:self.n_path_inequ_cstr]
+        w_path = v_w_lam_path[:, self.n_path_inequ_cstr:self.n_path_inequ_cstr + self.n_path_equ_cstr]
+        costate_traj = v_w_lam_path[:, self.n_path_inequ_cstr + self.n_path_equ_cstr:]
+        v_final = lam_g[
+                  lam_g.size - self.n_final_inequ_cstr - self.n_final_equ_cstr:lam_g.size - self.n_final_equ_cstr]
+        w_final = lam_g[lam_g.size - self.n_final_equ_cstr:]
+
+        # compute the inequality constraint value
+        g_h_f_traj = numpy.reshape(g[:g.size - self.n_final_inequ_cstr - self.n_final_equ_cstr],
+                                   (-1, self.n_state + self.n_path_equ_cstr + self.n_path_inequ_cstr))
+        inequ_path = g_h_f_traj[:, 0:self.n_path_inequ_cstr]
+        inequ_final = g[lam_g.size - self.n_final_inequ_cstr - self.n_final_equ_cstr:lam_g.size - self.n_final_equ_cstr]
+
+        # output
+        opt_sol = {"state_traj_opt": state_traj_opt,
+                   "control_traj_opt": control_traj_opt,
+                   "costate_traj_opt": costate_traj,
+                   "inequ_path": inequ_path,
+                   "inequ_final": inequ_final,
+                   "v_path": v_path,
+                   "v_final": v_final,
+                   "w_path": w_path,
+                   "w_final": w_final,
+                   'auxvar_value': auxvar_value,
+                   "time": time,
+                   "horizon": horizon,
+                   "cost": sol['f'].full()}
+
+        return opt_sol
+        
+
     # get differential CPMP
     def diffCPMP(self, ):
 

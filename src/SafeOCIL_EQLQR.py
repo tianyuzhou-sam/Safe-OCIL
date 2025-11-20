@@ -13,8 +13,7 @@ sys.path.append(os.getcwd() + '/src/')
 import JinEnv
 from EKF import EKF
 from Loss_function import Loss
-import ocSolver
-import PDP
+import SafePDP
 
 
 class ImitationLearning:
@@ -55,7 +54,7 @@ class ImitationLearning:
         # self.true_theta = np.hstack((self.true_theta, [10]))
 
         # ------------------------------ initialize Classes ------------------------------
-        self.sysoc = ocSolver.OCSys()
+        self.sysoc = SafePDP.COCsys()
         self.sysoc.setAuxvarVariable(vertcat(self.dynsys.dyn_auxvar, self.dynsys.cost_auxvar, self.dynsys.constraint_auxvar))
         self.sysoc.setControlVariable(self.dynsys.U)
         self.sysoc.setStateVariable(self.dynsys.X)
@@ -66,10 +65,7 @@ class ImitationLearning:
         self.sysoc.setPathInequCstr(self.dynsys.path_inequ)
         self.sysoc.diffCPMP()
 
-        self.clqr = ocSolver.EQCLQR()
-        self.beta = beta
-        self.alpha = alpha
-        self.sysoc.convert2BarrierOC(alpha=alpha, beta=beta)
+        self.clqr = SafePDP.EQCLQR()
 
         # ------------------------------ initialize task constraint functions ------------------------------
         if hasattr(self.dynsys, 'task_const') and self.dynsys.task_const is not None:
@@ -122,66 +118,60 @@ class ImitationLearning:
             for idx in range(self.demo_horizon):
                 data_start_time = time.time()
                 # --------------------------- Trajectory based on current parameter guess ---------------------------------------- 
-                if idx == 0 and iter == 0:
-                    traj = self.sysoc.solveBarrierOC(ini_state=self.demo_ini_state, horizon=self.demo_horizon, auxvar_value = self.theta)
+                if idx >= 0:
+                    traj = self.sysoc.ocSolver(init_state=self.demo_ini_state, horizon=self.demo_horizon, auxvar_value = self.theta)
                 else:
-                    traj = self.sysoc.solveBarrierOCRef(ini_state=self.demo_ini_state, horizon=self.demo_horizon, auxvar_value = self.theta, ref=self.ref_traj)
-
+                    traj = self.sysoc.ocSolverWithRef(init_state=self.demo_ini_state, horizon=self.demo_horizon, auxvar_value = self.theta, ref=self.ref_traj)
                 self.ref_traj = traj
                 # --------------------------- Gradient generator, dXidtheta ---------------------------------------- 
                 gradient_start_time = time.time()
-                aux_sol = self.sysoc.auxSysBarrierOC(opt_sol=traj)
-                self.gradient_time += [time.time()-gradient_start_time]
+                auxsys = self.sysoc.getAuxSys(opt_sol=traj, threshold=1e-2)
 
+                self.gradient_time += [time.time()-gradient_start_time]
+                self.clqr.auxsys2Eqctlqr(auxsys=auxsys)
+                aux_sol = self.clqr.eqctlqrSolver(threshold=1e-2)
                 ekf_start_time = time.time()
                 
-                if aux_sol is not None:
-                    # take solution of the auxiliary control system
-                    dxdtheta_traj = aux_sol['state_traj_opt']
-                    dudtheta_traj = aux_sol['control_traj_opt']
+                # take solution of the auxiliary control system
+                dxdtheta_traj = aux_sol['state_traj_opt']
+                dudtheta_traj = aux_sol['control_traj_opt']
 
-                    dxdtheta_t = dxdtheta_traj[idx]
-                    dudtheta_t = dudtheta_traj[idx]
+                dxdtheta_t = dxdtheta_traj[idx]
+                dudtheta_t = dudtheta_traj[idx]
 
-                    # --------------------------- Loss function, dLdXi ---------------------------------------- 
-                    state_traj = traj['state_traj_opt']
-                    control_traj = traj['control_traj_opt']
+                # --------------------------- Loss function, dLdXi ---------------------------------------- 
+                state_traj = traj['state_traj_opt']
+                control_traj = traj['control_traj_opt']
 
-                    xi = SX.sym("xi", self.dynsys.X.shape[0] + self.dynsys.U.shape[0])
+                xi = SX.sym("xi", self.dynsys.X.shape[0] + self.dynsys.U.shape[0])
 
-                    # Create demo trajectory data
-                    demo_traj = np.hstack((self.demo_state_traj[idx], self.demo_control_traj[idx]))
-                    current_traj = np.hstack((state_traj[idx], control_traj[idx]))
-                    dxidtheta_t = np.vstack((dxdtheta_traj[idx], dudtheta_traj[idx]))
-                    loss = demo_traj - xi
+                # Create demo trajectory data
+                demo_traj = np.hstack((self.demo_state_traj[idx], self.demo_control_traj[idx]))
+                current_traj = np.hstack((state_traj[idx], control_traj[idx]))
+                dxidtheta_t = np.vstack((dxdtheta_traj[idx], dudtheta_traj[idx]))
+                loss = demo_traj - xi
 
-                    dLdXi = jacobian(loss, xi)
+                dLdXi = jacobian(loss, xi)
 
-                    lossFun = Function("lossFun", [xi], [loss])
-                    dLdXiFun = Function("dLdXiFun", [xi], [dLdXi])
+                lossFun = Function("lossFun", [xi], [loss])
+                dLdXiFun = Function("dLdXiFun", [xi], [dLdXi])
 
-                    lossNow = lossFun(current_traj).full()
-                    dLdXiNow = dLdXiFun(current_traj).full()
+                lossNow = lossFun(current_traj).full()
+                dLdXiNow = dLdXiFun(current_traj).full()
 
-                    # --------------------------- Chain rule ----------------------------------------
-                    dLdtheta = np.matmul(dLdXiNow, dxidtheta_t)
-                    dp = dLdtheta
-
-                else:
-                    self.dp = np.zeros(self.theta.shape)
-                    lossNow = np.zeros((self.dynsys.X.shape[0] + self.dynsys.U.shape[0], 1))
-
+                # --------------------------- Chain rule ----------------------------------------
+                dLdtheta = np.matmul(dLdXiNow, dxidtheta_t)
+                dp = dLdtheta
 
                 self.evaluateLoss(state_traj, control_traj)
 
                 if self.plotTrajFlag:
                     self.plotTraj(state_traj, control_traj)
                 
-               
-
+            
                 if self.iteration < 100:
                     print('Data = ', iter*self.demo_horizon+idx, 'Loss = ', self.Loss_his[-1])
-                    # print('theta = ', self.theta)
+                    print('theta = ', self.theta)
                 else:
                     if(iter*self.demo_horizon+idx) % 100 == 0:
                         print('Data = ', iter*self.demo_horizon+idx, 'Loss = ', self.Loss_his[-1])
@@ -222,8 +212,6 @@ class ImitationLearning:
 
         if self.plotFlag:
             self.plotLoss()
-
-        return self.Loss_his
 
     def evaluateLoss(self, state_traj, control_traj):
         Loss = 0

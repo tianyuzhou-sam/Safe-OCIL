@@ -47,8 +47,6 @@ class generateTraj:
         state_traj_coc = coctraj['state_traj_opt']
         control_traj_coc = coctraj['control_traj_opt']
 
-
-
         iter = [*range(len(state_traj))]
         fig, axs = plt.subplots(len(state_traj[0]),1)
         for idx in range(len(state_traj[0])):

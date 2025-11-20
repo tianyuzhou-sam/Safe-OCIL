@@ -22,6 +22,7 @@ class ImitationLearning:
         self.dir = dir
         self.saveFlag = saveFlag
         self.plotTrajFlag = False
+        self.plotFlag = False
         if saveFlag:
             if not os.path.exists(self.dir+"results/"):
                 os.mkdir(self.dir+"results/")
@@ -106,8 +107,11 @@ class ImitationLearning:
             for idx in range(self.demo_horizon):
                 data_start_time = time.time()
                 # --------------------------- Trajectory based on current parameter guess ---------------------------------------- 
-                traj = self.sysoc.ocSolver(ini_state=self.demo_ini_state, horizon=self.demo_horizon, auxvar_value = self.theta)
-                
+                if idx == 0 and iter == 0:
+                    traj = self.sysoc.ocSolver(ini_state=self.demo_ini_state, horizon=self.demo_horizon, auxvar_value = self.theta)
+                else:
+                    traj = self.sysoc.ocSolverWithRef(ini_state=self.demo_ini_state, horizon=self.demo_horizon, auxvar_value = self.theta, ref=self.ref_traj)
+                self.ref_traj = traj
                 # --------------------------- Gradient generator, dXidtheta ---------------------------------------- 
                 gradient_start_time = time.time()
                 aux_sys = self.sysoc.getAuxSys(state_traj_opt=traj['state_traj_opt'],
@@ -186,11 +190,12 @@ class ImitationLearning:
         self.u_his += [control_traj]
 
         # --------------------------- save all Loss ---------------------------
-        self.plotTraj(state_traj, control_traj)
+        if self.plotFlag:
+            self.plotTraj(state_traj, control_traj)
         if self.saveFlag:
             self.saveAll()
-        
-        self.plotLoss()
+        if self.plotFlag:
+            self.plotLoss()
 
     def evaluateLoss(self, state_traj, control_traj):
         Loss = 0

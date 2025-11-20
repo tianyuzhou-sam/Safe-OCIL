@@ -28,6 +28,18 @@ for i in range(trails):
 
 horizon = len(results['control'][0])
 
+OCIL_trails = 20
+for i in range(OCIL_trails):
+    results_file = f'examples/robotarm/data/results/OCIL/results_{i+1}.mat'
+    results = sio.loadmat(results_file)
+    if i == 0:
+        OCIL_time = results['OCIL_time']
+        OCIL_gradient_time = results['Gradient_time']
+    else:
+        OCIL_time = np.vstack((OCIL_time, results['OCIL_time']))
+        OCIL_gradient_time = np.vstack((OCIL_gradient_time, results['Gradient_time']))
+
+
 
 print('SOCIL_time = ', np.mean(SOCIL_time)*1000)
 print('SOCIL STD = ', np.std(SOCIL_time)*1000)
@@ -36,6 +48,12 @@ print('gradient STD = ', np.std(gradient_time)*1000)
 print('estimator_time = ', np.mean(estimator_time)*1000)
 print('estimator STD = ', np.std(estimator_time)*1000)
 
+print('OCIL_time = ', np.mean(OCIL_time)*1000)
+print('OCIL STD = ', np.std(OCIL_time)*1000)
+print('OCIL gradient_time = ', np.mean(OCIL_gradient_time)*1000)
+print('OCIL gradient STD = ', np.std(OCIL_gradient_time)*1000)
+
+print('--------------------------------')
 
 SOCIL_Loss_avg = np.mean(Loss_SOCIL, axis=0)
 SOCIL_Loss_std = np.std(Loss_SOCIL, axis=0)
@@ -81,6 +99,28 @@ axs.set_ylim([0.8,200])
 axs.set_yscale('log')
 axs.legend(['Safe OCIL (Online)', 'Safe OCIL (Offline)', 'Safe PDP'], fontsize=24)
 plt.tight_layout()
+plt.show()
+
+
+EQLQR_trails = 100
+for i in range(EQLQR_trails):
+    results_file = f'examples/robotarm/data/results/EQLQR/results_{i+1}.mat'
+    results = sio.loadmat(results_file)
+    if i == 0:
+        Loss_EQLQR = results['Loss']
+    else:
+        Loss_EQLQR = np.vstack((Loss_EQLQR, results['Loss']))
+EQLQR_Loss_avg = np.mean(Loss_EQLQR, axis=0)
+EQLQR_Loss_std = np.std(Loss_EQLQR, axis=0)
+EQLQR_Loss_ub = EQLQR_Loss_avg + 3*EQLQR_Loss_std
+EQLQR_Loss_lb = EQLQR_Loss_avg - 3*EQLQR_Loss_std
+t_EQLQR = np.arange(0, len(Loss_EQLQR[0]))
+
+fig, axs = plt.subplots(1, 1, figsize=(10, 8))
+plt.plot(t_SOCIL[:horizon], SOCIL_Loss_avg[:horizon], 'b-', linewidth=3)
+plt.plot(t_EQLQR[:horizon], EQLQR_Loss_avg[:horizon], 'g-', linewidth=3)
+plt.plot(t_SOCIL, SOCIL_Loss_avg, 'b--', linewidth=3)
+plt.plot(t_EQLQR, EQLQR_Loss_avg, 'g--', linewidth=3)
 plt.show()
 
 

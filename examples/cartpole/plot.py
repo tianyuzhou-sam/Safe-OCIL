@@ -28,6 +28,17 @@ for i in range(trails):
 
 horizon = len(results['control'][0])
 
+OCIL_trails = 20
+for i in range(OCIL_trails):
+    results_file = f'examples/cartpole/data/results/OCIL/results_{i+1}.mat'
+    results = sio.loadmat(results_file)
+    if i == 0:
+        OCIL_time = results['OCIL_time']
+        OCIL_gradient_time = results['Gradient_time']
+    else:
+        OCIL_time = np.vstack((OCIL_time, results['OCIL_time']))
+        OCIL_gradient_time = np.vstack((OCIL_gradient_time, results['Gradient_time']))
+
 
 print('SOCIL_time = ', np.mean(SOCIL_time)*1000)
 print('SOCIL STD = ', np.std(SOCIL_time)*1000)
@@ -35,6 +46,13 @@ print('gradient_time = ', np.mean(gradient_time)*1000)
 print('gradient STD = ', np.std(gradient_time)*1000)
 print('estimator_time = ', np.mean(estimator_time)*1000)
 print('estimator STD = ', np.std(estimator_time)*1000)
+
+print('OCIL_time = ', np.mean(OCIL_time)*1000)
+print('OCIL STD = ', np.std(OCIL_time)*1000)
+print('OCIL gradient_time = ', np.mean(OCIL_gradient_time)*1000)
+print('OCIL gradient STD = ', np.std(OCIL_gradient_time)*1000)
+
+print('--------------------------------')
 
 SOCIL_Loss_avg = np.mean(Loss_SOCIL, axis=0)
 SOCIL_Loss_std = np.std(Loss_SOCIL, axis=0)
@@ -87,6 +105,17 @@ for i in range(trails):
 
 horizon_robotarm = len(results['control'][0])
 
+OCIL_trails = 20
+for i in range(OCIL_trails):
+    results_file = f'examples/robotarm/data/results/OCIL/results_{i+1}.mat'
+    results = sio.loadmat(results_file)
+    if i == 0:
+        OCIL_time_robotarm = results['OCIL_time']
+        OCIL_gradient_time_robotarm = results['Gradient_time']
+    else:
+        OCIL_time_robotarm = np.vstack((OCIL_time_robotarm, results['OCIL_time']))
+        OCIL_gradient_time_robotarm = np.vstack((OCIL_gradient_time_robotarm, results['Gradient_time']))
+
 
 print('SOCIL_time_robotarm = ', np.mean(SOCIL_time_robotarm)*1000)
 print('SOCIL STD_robotarm = ', np.std(SOCIL_time_robotarm)*1000)
@@ -94,6 +123,11 @@ print('gradient_time_robotarm = ', np.mean(gradient_time_robotarm)*1000)
 print('gradient STD_robotarm = ', np.std(gradient_time_robotarm)*1000)
 print('estimator_time_robotarm = ', np.mean(estimator_time_robotarm)*1000)
 print('estimator STD_robotarm = ', np.std(estimator_time_robotarm)*1000)
+
+print('OCIL_time_robotarm = ', np.mean(OCIL_time_robotarm)*1000)
+print('OCIL STD_robotarm = ', np.std(OCIL_time_robotarm)*1000)
+print('OCIL gradient_time_robotarm = ', np.mean(OCIL_gradient_time_robotarm)*1000)
+print('OCIL gradient STD_robotarm = ', np.std(OCIL_gradient_time_robotarm)*1000)
 
 SOCIL_Loss_avg_robotarm = np.mean(Loss_SOCIL_robotarm, axis=0)
 SOCIL_Loss_std_robotarm = np.std(Loss_SOCIL_robotarm, axis=0)
@@ -119,13 +153,29 @@ SPDP_Loss_lb_robotarm = SPDP_Loss_avg_robotarm - 3*SPDP_Loss_std_robotarm
 t_SPDP_robotarm = list(range(0, len(Loss_SPDP_robotarm[0])))
 t_SPDP_robotarm = [x*horizon_robotarm for x in t_SPDP_robotarm]
 
+EQLQR_trails = 100
+for i in range(EQLQR_trails):
+    results_file = f'examples/robotarm/data/results/EQLQR/results_{i+1}.mat'
+    results = sio.loadmat(results_file)
+    if i == 0:
+        Loss_EQLQR = results['Loss']
+    else:
+        Loss_EQLQR = np.vstack((Loss_EQLQR, results['Loss']))
+EQLQR_Loss_avg = np.mean(Loss_EQLQR, axis=0)
+EQLQR_Loss_std = np.std(Loss_EQLQR, axis=0)
+EQLQR_Loss_ub = EQLQR_Loss_avg + 3*EQLQR_Loss_std
+EQLQR_Loss_lb = EQLQR_Loss_avg - 3*EQLQR_Loss_std
+t_EQLQR = np.arange(0, len(Loss_EQLQR[0]))
 
-fig, axs = plt.subplots(1,2, figsize=(16, 4))
+
+fig, axs = plt.subplots(1,2, figsize=(16, 5))
 
 # CartPole plot (left subplot)
+axs[0].plot(t_SOCIL[:horizon], SOCIL_Loss_avg[:horizon], 'b-', linewidth=5, label='Safe OCIL, Proposed (Online)')
+axs[0].plot(t_SOCIL, SOCIL_Loss_avg, 'b--', linewidth=5, label='Safe OCIL, Proposed (Offline)')
+axs[0].plot(t_SPDP, SPDP_Loss_avg, 'r--o', linewidth=5, markersize=12, label='Safe PDP')
 axs[0].plot(t_SOCIL[:horizon], SOCIL_Loss_avg[:horizon], 'b-', linewidth=5)
 axs[0].plot(t_SOCIL, SOCIL_Loss_avg, 'b--', linewidth=5)
-axs[0].plot(t_SPDP, SPDP_Loss_avg, 'r--o', linewidth=5, markersize=12)
 axs[0].fill_between(t_SPDP, SPDP_Loss_lb, SPDP_Loss_ub, color='lightcoral')
 axs[0].fill_between(t_SOCIL, SOCIL_Loss_lb, SOCIL_Loss_ub, color='lightskyblue')
 axs[0].set_xlabel('# of Data', labelpad=0)
@@ -134,13 +184,18 @@ axs[0].grid(True, alpha=0.3)
 axs[0].set_xlim([0,174])
 axs[0].set_ylim([1,500])
 axs[0].set_yscale('log')
-axs[0].legend(['Safe OCIL (Online)', 'Safe OCIL (Offline)', 'Safe PDP'], fontsize=20)
 
 # RobotArm plot (right subplot)
+axs[1].plot(t_SOCIL_robotarm[:horizon_robotarm], SOCIL_Loss_avg_robotarm[:horizon_robotarm], 'b-', linewidth=5, label='Safe OCIL, Proposed (Online)')
+axs[1].plot(t_SOCIL_robotarm, SOCIL_Loss_avg_robotarm, 'b--', linewidth=5, label='Safe OCIL, Proposed (Offline)')
+axs[1].plot(t_EQLQR[:horizon], EQLQR_Loss_avg[:horizon], 'g-', linewidth=5, label='OCIL w/ Equality-constrained LQR (Online)')
+axs[1].plot(t_EQLQR, EQLQR_Loss_avg, 'g--', linewidth=5, label='OCIL w/ Equality-constrained LQR (Offline)')
+axs[1].plot(t_SPDP_robotarm, SPDP_Loss_avg_robotarm, 'r--o', linewidth=5, markersize=12, label='Safe PDP')
+
 axs[1].plot(t_SOCIL_robotarm[:horizon_robotarm], SOCIL_Loss_avg_robotarm[:horizon_robotarm], 'b-', linewidth=5)
-axs[1].plot(t_SOCIL_robotarm, SOCIL_Loss_avg_robotarm, 'b--', linewidth=5)
-axs[1].plot(t_SPDP_robotarm, SPDP_Loss_avg_robotarm, 'r--o', linewidth=5, markersize=12)
+
 axs[1].fill_between(t_SPDP_robotarm, SPDP_Loss_lb_robotarm, SPDP_Loss_ub_robotarm, color='lightcoral')
+axs[1].fill_between(t_EQLQR, EQLQR_Loss_lb, EQLQR_Loss_ub, color='lightgreen')
 axs[1].fill_between(t_SOCIL_robotarm, SOCIL_Loss_lb_robotarm, SOCIL_Loss_ub_robotarm, color='lightskyblue')
 axs[1].set_xlabel('# of Data', labelpad=0)
 axs[1].set_ylabel('Robot-Arm Loss', labelpad=0)
@@ -148,10 +203,23 @@ axs[1].grid(True, alpha=0.3)
 axs[1].set_xlim([0,124])
 axs[1].set_ylim([0.8,200])
 axs[1].set_yscale('log')
-# axs[1].legend(['Safe OCIL (Online)', 'Safe OCIL (Offline)', 'Safe PDP'], fontsize=16)
+
+# Create unified legend above the figure with two rows
+handles, labels = axs[1].get_legend_handles_labels()
+# Remove duplicates while preserving order
+seen = set()
+unique_handles = []
+unique_labels = []
+for h, l in zip(handles, labels):
+    if l not in seen:
+        seen.add(l)
+        unique_handles.append(h)
+        unique_labels.append(l)
+
+fig.legend(unique_handles, unique_labels, loc='upper center', ncol=3, fontsize=20, frameon=True, bbox_to_anchor=(0.5, 1.02))
 
 plt.tight_layout()
-plt.subplots_adjust(bottom=0.2, top=0.9)
+plt.subplots_adjust(bottom=0.15, top=0.80)
 plt.show()
 
 # fig, axs = plt.subplots(1,1, figsize=(8, 4))

@@ -15,7 +15,7 @@ saveFlag = False
 trails = 100
 dir = 'examples/cartpole/data/'
 demoFile = 'cartpole_original_constrained.mat'
-noise = 0.8
+noise = 0.
 alpha = 4*7.5*1e-2
 beta = 7.5*1e-2
 
@@ -37,9 +37,10 @@ for i in range(trails):
     system = SafeOCIL.ImitationLearning(project, mode, dynsys, noise, alpha, beta, dir, demoFile, saveFlag)
 
     initial_theta = true_theta + 2*sigma * (random_number[i] - 0.5)
+    print('true_theta = ', true_theta)
     print('initial_theta = ', initial_theta)
     system.initialize_theta(initial_theta)
-    system.set_iteration(2)
+    system.set_iteration(5)
 
     # --------------------------- initilize EKF ----------------------------------------
     # # no noise
@@ -53,9 +54,9 @@ for i in range(trails):
     # R = np.eye(5) * 0.0000001
 
     # 0.6-1.0 noise
-    P = np.eye(9) * 0.0000000001
-    Q = np.eye(9) * 0.
-    R = np.eye(5) * 0.0000001
+    # P = np.eye(9) * 0.0000000001
+    # Q = np.eye(9) * 0.
+    # R = np.eye(5) * 0.0000001
 
     system.initialize_EKF(P, Q, R)
 

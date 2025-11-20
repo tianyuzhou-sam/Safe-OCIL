@@ -4,7 +4,7 @@ import scipy.io as sio
 import os
 import sys
 sys.path.append(os.getcwd() + '/src')
-import SafeOCIL
+import SafeOCIL_EQLQR
 import JinEnv
 inf = 1e20
 
@@ -22,7 +22,7 @@ demoFile = 'robotarm_original_constrained.mat'
 noise = 0.
 alpha = 4*2*1e-2
 beta = 2*1e-2
-system = SafeOCIL.ImitationLearning(project, mode, dynsys, noise, alpha, beta, dir, demoFile, saveFlag)
+system = SafeOCIL_EQLQR.ImitationLearning(project, mode, dynsys, noise, alpha, beta, dir, demoFile, saveFlag)
 
 # initial guess
 data = sio.loadmat(dir+demoFile)

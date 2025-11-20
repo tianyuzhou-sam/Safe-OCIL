@@ -4,18 +4,20 @@ import scipy.io as sio
 import os
 import sys
 sys.path.append(os.getcwd() + '/src')
-import OCIL
+import SafeOCIL_EQLQR
 import JinEnv
 
 # ------------------------------ Set up dynamic system ------------------------------
 project = "CartPole"
 mode = "All"
-saveFlag = True
+saveFlag = False
 
-trails = 20
+trails = 100
 dir = 'examples/cartpole/data/'
-demoFile = 'cartpole_OCIL_original_constrained.mat'
+demoFile = 'cartpole_original_constrained.mat'
 noise = 0.
+alpha = 4*7.5*1e-2
+beta = 7.5*1e-2
 
 # initial guess
 data = sio.loadmat(dir+demoFile)
@@ -31,18 +33,20 @@ for i in range(trails):
     dynsys = JinEnv.CartPole()
     dynsys.initDyn()
     dynsys.initCost(wu = 0.1)
-    system = OCIL.ImitationLearning(project, mode, dynsys, noise, dir, demoFile, saveFlag)
+    dynsys.initConstraints()
+    system = SafeOCIL_EQLQR.ImitationLearning(project, mode, dynsys, noise, alpha, beta, dir, demoFile, saveFlag)
 
     initial_theta = true_theta + 2*sigma * (random_number[i] - 0.5)
     print('initial_theta = ', initial_theta)
     system.initialize_theta(initial_theta)
-    system.set_iteration(5)
+    system.set_iteration(1)
 
     # --------------------------- initilize EKF ----------------------------------------
-    P = np.eye(7) * 0.000000000001
-    Q = np.eye(7) * 0.
-    R = np.eye(5) * 0.0000001
+    P = np.eye(9) * 0.00000000001
+    Q = np.eye(9) * 0.
+    R = np.eye(5) * 0.00000001
 
     system.initialize_EKF(P, Q, R)
 
     system.solve()
+
