@@ -5,12 +5,15 @@
 **Tianyu Zhou · Zihao Liang · Zehui Lu · Shaoshuai Mou**
 Purdue University
 
-arXiv:2512.13868, December 2025
+IEEE Control Systems Letters, vol. 9, pp. 3083–3088, 2025
 
-[**Paper**](https://arxiv.org/abs/2512.13868) ·
+[**Paper**](https://ieeexplore.ieee.org/document/11315148) ·
+[**Project page**](https://zihaoliang.github.io/Safe-OCIL/) ·
 [**Code**](https://github.com/ZihaoLiang/Safe-OCIL)
 
+[![L-CSS](https://img.shields.io/badge/L--CSS-10.1109%2FLCSYS.2025.3648637-00629b.svg)](https://doi.org/10.1109/LCSYS.2025.3648637)
 [![arXiv](https://img.shields.io/badge/arXiv-2512.13868-b31b1b.svg)](https://arxiv.org/abs/2512.13868)
+[![project page](https://img.shields.io/badge/project%20page-live-0071e3.svg)](https://zihaoliang.github.io/Safe-OCIL/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-yellow.svg)](LICENSE)
 
 <img src="images/state_control.png" width="52%" alt="Cart-pole cart position and control force after learning. Safe OCIL matches the demonstration inside the shaded safe set; OCIL, which has no notion of the limits, leaves it.">
@@ -35,6 +38,10 @@ There are no epochs, no replay buffer and no batch to wait for. The paper proves
 local convergence of the estimate together with satisfaction of the original
 constraints, and an update finishes in well under one control period on both
 systems.
+
+> **[Try the interactive project page →](https://zihaoliang.github.io/Safe-OCIL/)**
+> Scrub through learning one measurement at a time, watch both mechanisms move,
+> and see every figure below drawn from the runs in this repository.
 
 ## The barrier
 
@@ -161,6 +168,8 @@ examples/
   cartpole/  robotarm/  the scripts above, their demonstrations and results
   tests/                a cart-pole script running the same problem through
                         several solvers side by side
+docs/                   the project page, served by GitHub Pages; one
+                        self-contained HTML file, no build step, no dependencies
 images/                 the figures in this README
 ```
 
@@ -252,10 +261,18 @@ increments `OCIL_control_violations` inside the Safe OCIL loop, which raises a
 cart-pole run, so the script completes as shipped.
 
 What the repository does carry: 100 trials each of Safe OCIL and Safe PDP on both
-systems, plus cart-pole sweeps over measurement noise
-(`SOCIL_noise2/4/08/10`, σ = 0.2 to 1.0), over the barrier weight
-(`SOCIL_005`, `SOCIL_01`) and over the Safe PDP learning rate (`SPDP_0025`,
-`SPDP_005`).
+systems, plus a cart-pole sweep over measurement noise (`SOCIL_noise2/4/08/10`,
+σ = 0.2 to 1.0).
+
+The remaining cart-pole result folders are named for the **spread of the initial
+guess**, not for a barrier or learning-rate setting: `SOCIL_005` is Safe OCIL from
+guesses perturbed by ±0.05 rather than the ±0.1 of `SOCIL`, and `SPDP_005` is Safe
+PDP from ±0.05 rather than the ±0.025 of `SPDP`. `SOCIL_01` and `SPDP_0025` are
+byte-for-byte copies of `SOCIL` and `SPDP` respectively — the same runs re-filed
+under their own spread. Note that the headline comparison therefore draws Safe
+OCIL's initial guesses from a spread four times wider than Safe PDP's; the two
+`_005` folders are the matched pair, and Safe OCIL still reaches a lower loss
+there from less data.
 
 ## Notes
 
@@ -289,9 +306,11 @@ systems, plus cart-pole sweeps over measurement noise
 @article{zhou2025safe,
   title   = {Safe Online Control-Informed Learning},
   author  = {Zhou, Tianyu and Liang, Zihao and Lu, Zehui and Mou, Shaoshuai},
-  journal = {arXiv preprint arXiv:2512.13868},
+  journal = {IEEE Control Systems Letters},
+  volume  = {9},
+  pages   = {3083--3088},
   year    = {2025},
-  url     = {https://arxiv.org/abs/2512.13868}
+  doi     = {10.1109/LCSYS.2025.3648637}
 }
 ```
 
